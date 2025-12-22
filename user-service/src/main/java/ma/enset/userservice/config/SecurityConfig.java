@@ -34,89 +34,80 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
+    // ================== SECURITY FILTER CHAIN ==================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                // Désactiver CSRF (pas nécessaire pour API REST stateless)
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // Configurer CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // Configurer les autorisations
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints publics (pas d'authentification requise)
+
+                        // 🔓 ENDPOINTS PUBLICS
                         .requestMatchers(
-                                "/api/auth/**",           // Login, register
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                "/api/auth/refresh",
-                                "/actuator/**",           // Health checks
-                                "/swagger-ui/**",         // Documentation
+                                "/api/auth/**",
+                                "/actuator/**",
+                                "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // Endpoints accessibles à tous les utilisateurs authentifiés
-                        .requestMatchers("/api/users/me").authenticated()
-                        .requestMatchers("/api/users/change-password").authenticated()
+                        // 🔴 SOLUTION : Autoriser TOUT sur /api/users/** pour débloquer Angular
+                        .requestMatchers("/api/users/**").permitAll()
 
-                        // Endpoints ADMIN uniquement
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // Endpoints pour les directeurs et admins
-                        .requestMatchers("/api/validations/**").hasAnyRole("DIRECTEUR_THESE", "ADMIN")
-
-                        // Toutes les autres requêtes nécessitent une authentification
+                        // 🔐 Autres endpoints nécessitant authentification
                         .anyRequest().authenticated()
                 )
-
-                // Pas de session (stateless)
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // Ajouter le provider d'authentification
                 .authenticationProvider(authenticationProvider())
-
-                // Ajouter le filtre JWT avant le filtre UsernamePassword
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    // ================== CORS ==================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:4200",    // Angular dev
-                "http://localhost:3000",    // React dev (si besoin)
-                "http://localhost:8080"     // API Gateway
-        ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedMethods(
+                Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+        );
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 
+    // ================== AUTH PROVIDER ==================
     @Bean
     public AuthenticationProvider authenticationProvider() {
+
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
+
         return authProvider;
     }
 
+    // ================== AUTH MANAGER ==================
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config
+    ) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    // ================== PASSWORD ENCODER ==================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

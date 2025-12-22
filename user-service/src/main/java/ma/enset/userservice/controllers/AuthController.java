@@ -29,7 +29,8 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("📝 Requête d'inscription reçue pour: {}", request.getUsername());
+        // ✅ CORRECTION ICI : getUsername() remplacé par getMatricule()
+        log.info("📝 Requête d'inscription reçue pour matricule: {}", request.getMatricule());
 
         try {
             AuthResponse response = authService.register(request);
@@ -49,6 +50,8 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        // Ici on garde getUsername() car LoginRequest utilise un champ générique "username"
+        // qui contiendra le matricule saisi par l'utilisateur
         log.info("🔐 Requête de connexion reçue pour: {}", request.getUsername());
 
         try {
@@ -101,6 +104,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        // userDetails.getUsername() retourne le matricule (grâce à l'entité User)
         UserDTO user = authService.getCurrentUser(userDetails.getUsername());
         return ResponseEntity.ok(user);
     }
@@ -146,13 +150,11 @@ public class AuthController {
     }
 
     /**
-     * Déconnexion (côté client, juste invalider le token)
+     * Déconnexion
      * POST /api/auth/logout
      */
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout() {
-        // Avec JWT stateless, la déconnexion se fait côté client
-        // en supprimant le token du stockage local
         return ResponseEntity.ok(Map.of(
                 "message", "Déconnexion réussie. Veuillez supprimer le token côté client."
         ));

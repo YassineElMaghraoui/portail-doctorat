@@ -34,40 +34,32 @@ public class AuthService {
     private long jwtExpiration;
 
     /**
-     * Inscription d'un nouvel utilisateur (Force CANDIDAT)
+     * Inscription
      */
     public AuthResponse register(RegisterRequest request) {
-        log.info("📝 Tentative d'inscription: {}", request.getUsername());
+        log.info("📝 Inscription matricule: {}", request.getMatricule());
 
-        // Vérifications
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Ce nom d'utilisateur existe déjà");
+        if (userRepository.existsByMatricule(request.getMatricule())) {
+            throw new RuntimeException("Ce matricule existe déjà");
         }
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Cet email est déjà utilisé");
         }
 
-        // Créer l'utilisateur
         User user = new User();
-        user.setUsername(request.getUsername());
+        user.setMatricule(request.getMatricule());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setNom(request.getNom());
         user.setPrenom(request.getPrenom());
-
-        // 🔴 CHANGEMENT MAJEUR : On force le rôle CANDIDAT
-        // Peu importe ce que le frontend envoie, ce sera CANDIDAT.
+        user.setTelephone(request.getTelephone());
         user.setRole(Role.CANDIDAT);
-
-        // On laisse enabled=true pour qu'il puisse se connecter
-        // et voir la page "En attente de validation"
         user.setEnabled(true);
 
         User savedUser = userRepository.save(user);
-        log.info("✅ Candidat inscrit: {}", savedUser.getUsername());
+        log.info("✅ Candidat inscrit: {}", savedUser.getMatricule());
 
-        // Générer les tokens
-        UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getUsername());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getMatricule());
         String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
 
@@ -77,38 +69,42 @@ public class AuthService {
                 .tokenType("Bearer")
                 .expiresIn(jwtExpiration / 1000)
                 .userId(savedUser.getId())
-                .username(savedUser.getUsername())
+                .username(savedUser.getMatricule())
                 .email(savedUser.getEmail())
                 .nom(savedUser.getNom())
                 .prenom(savedUser.getPrenom())
                 .role(savedUser.getRole())
-                .message("Inscription réussie en tant que Candidat")
+                .message("Inscription réussie")
                 .build();
     }
 
     /**
-     * Connexion d'un utilisateur
+     * Connexion (Supporte Matricule OU Email)
      */
     public AuthResponse login(LoginRequest request) {
-        log.info("🔐 Tentative de connexion: {}", request.getUsername());
+        String loginInput = request.getUsername(); // Peut être matricule ou email
+        log.info("🔐 Tentative de connexion pour: {}", loginInput);
+
+        // 1. RÉCUPÉRATION DE L'UTILISATEUR (Par Matricule OU Email)
+        User user = userRepository.findByMatricule(loginInput)
+                .orElseGet(() -> userRepository.findByEmail(loginInput)
+                        .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé")));
 
         try {
+            // 2. AUTHENTIFICATION (On utilise le VRAI matricule de l'utilisateur trouvé)
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
+                            user.getMatricule(), // Important : Spring Security attend le matricule ici
                             request.getPassword()
                     )
             );
 
-            User user = userRepository.findByUsername(request.getUsername())
-                    .orElseGet(() -> userRepository.findByEmail(request.getUsername())
-                            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé")));
-
+            // 3. GÉNÉRATION DES TOKENS
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String accessToken = jwtService.generateToken(userDetails);
             String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-            log.info("✅ Connexion réussie: {} (Rôle: {})", user.getUsername(), user.getRole());
+            log.info("✅ Connexion réussie: {}", user.getMatricule());
 
             return AuthResponse.builder()
                     .accessToken(accessToken)
@@ -116,7 +112,7 @@ public class AuthService {
                     .tokenType("Bearer")
                     .expiresIn(jwtExpiration / 1000)
                     .userId(user.getId())
-                    .username(user.getUsername())
+                    .username(user.getMatricule())
                     .email(user.getEmail())
                     .nom(user.getNom())
                     .prenom(user.getPrenom())
@@ -125,23 +121,20 @@ public class AuthService {
                     .build();
 
         } catch (BadCredentialsException e) {
-            log.warn("❌ Échec de connexion pour {}", request.getUsername());
-            throw new RuntimeException("Nom d'utilisateur ou mot de passe incorrect");
+            log.warn("❌ Mot de passe incorrect pour {}", loginInput);
+            throw new RuntimeException("Identifiant ou mot de passe incorrect");
         }
     }
 
-    /**
-     * Rafraîchir le token
-     */
     public AuthResponse refreshToken(String refreshToken) {
         if (!jwtService.validateToken(refreshToken)) {
-            throw new RuntimeException("Refresh token invalide");
+            throw new RuntimeException("Invalide");
         }
-        String username = jwtService.extractUsername(refreshToken);
-        User user = userRepository.findByUsername(username)
+        String matricule = jwtService.extractUsername(refreshToken);
+        User user = userRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(matricule);
         String newAccessToken = jwtService.generateToken(userDetails);
         String newRefreshToken = jwtService.generateRefreshToken(userDetails);
 
@@ -151,7 +144,7 @@ public class AuthService {
                 .tokenType("Bearer")
                 .expiresIn(jwtExpiration / 1000)
                 .userId(user.getId())
-                .username(user.getUsername())
+                .username(user.getMatricule())
                 .email(user.getEmail())
                 .nom(user.getNom())
                 .prenom(user.getPrenom())
@@ -159,11 +152,11 @@ public class AuthService {
                 .build();
     }
 
-    public void changePassword(String username, ChangePasswordRequest request) {
+    public void changePassword(String matricule, ChangePasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("Les mots de passe ne correspondent pas");
         }
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
@@ -173,13 +166,13 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    public UserDTO getCurrentUser(String username) {
-        User user = userRepository.findByUsername(username)
+    public UserDTO getCurrentUser(String matricule) {
+        User user = userRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         return UserDTO.builder()
                 .id(user.getId())
-                .username(user.getUsername())
+                .username(user.getMatricule())
                 .email(user.getEmail())
                 .nom(user.getNom())
                 .prenom(user.getPrenom())

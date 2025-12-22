@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LoginRequest {
 
-    @NotBlank(message = "Le nom d'utilisateur ou email est obligatoire")
-    private String username;  // Peut être username ou email
+    @NotBlank(message = "Le matricule (ou email) est obligatoire")
+    private String username;  // Correspond au champ du formulaire de login (matricule)
 
     @NotBlank(message = "Le mot de passe est obligatoire")
     private String password;

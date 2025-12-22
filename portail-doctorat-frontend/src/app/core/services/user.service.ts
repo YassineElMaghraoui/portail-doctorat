@@ -1,45 +1,63 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '@environments/environment';
+import { environment } from '../../../environments/environment';
 import { User } from '../models/user.model';
 
 @Injectable({
     providedIn: 'root'
 })
 export class UserService {
-    // Pointe vers le port 8081 (User Service)
-    private apiUrl = environment.userServiceUrl || 'http://localhost:8081/api/users';
+
+    /**
+     * environment.userServiceUrl = 'http://localhost:8081/api'
+     * baseUrl final = 'http://localhost:8081/api/users'
+     */
+    private baseUrl = `${environment.userServiceUrl}/users`;
 
     constructor(private http: HttpClient) {}
 
-    /** Récupérer tous les utilisateurs */
+    /** 🔹 Récupérer tous les utilisateurs */
     getAllUsers(): Observable<User[]> {
-        return this.http.get<User[]>(this.apiUrl);
+        return this.http.get<User[]>(this.baseUrl);
     }
 
-    /** 🔴 NOUVEAU : Récupérer par rôle (pour l'admin dashboard) */
+    /**
+     * 🔹 Récupérer les utilisateurs par rôle
+     * URL finale : http://localhost:8081/api/users/role/CANDIDAT
+     */
     getUsersByRole(role: string): Observable<User[]> {
-        return this.http.get<User[]>(`${this.apiUrl}/role/${role}`);
+        return this.http.get<User[]>(`${this.baseUrl}/role/${role}`);
     }
 
-    /** 🔴 NOUVEAU : Créer un utilisateur (pour créer un Directeur manuellement) */
-    createUser(user: any): Observable<User> {
-        return this.http.post<User>(this.apiUrl, user);
+    /** 🔹 Récupérer un utilisateur par ID */
+    getUserById(id: number): Observable<User> {
+        return this.http.get<User>(`${this.baseUrl}/${id}`);
     }
 
-    /** Mettre à jour un utilisateur (ex: changer son rôle) */
+    /** 🔹 Créer un utilisateur */
+    createUser(user: User): Observable<User> {
+        return this.http.post<User>(this.baseUrl, user);
+    }
+
+    /** 🔹 Mettre à jour un utilisateur */
     updateUser(id: number, user: Partial<User>): Observable<User> {
-        return this.http.put<User>(`${this.apiUrl}/${id}`, user);
+        return this.http.put<User>(`${this.baseUrl}/${id}`, user);
     }
 
-    /** Raccourci pour changer juste le rôle */
+    /**
+     * 🔹 Mettre à jour uniquement le rôle
+     * ✅ Appel du endpoint spécifique
+     * PUT http://localhost:8081/api/users/123/role?newRole=DOCTORANT
+     */
     updateRole(id: number, newRole: string): Observable<User> {
-        // On envoie un objet partiel avec juste le rôle
-        return this.updateUser(id, { role: newRole } as any);
+        return this.http.put<User>(`${this.baseUrl}/${id}/role`, {}, {
+            params: { newRole: newRole }
+        });
     }
 
+    /** 🔹 Supprimer un utilisateur */
     deleteUser(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`);
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
     }
 }

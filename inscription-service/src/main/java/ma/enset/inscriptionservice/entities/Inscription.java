@@ -1,7 +1,6 @@
 package ma.enset.inscriptionservice.entities;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -26,18 +25,18 @@ public class Inscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Référence au doctorant (User Service)
+    // L'ID du doctorant est obligatoire (c'est lui qui crée le dossier)
     @NotNull(message = "L'ID du doctorant est obligatoire")
     @Column(name = "doctorant_id", nullable = false)
     private Long doctorantId;
 
-    // Référence au directeur de thèse (User Service)
+    // ✅ CORRECTION : Pas de @NotNull ici.
+    // Ce champ est optionnel à la création. L'Admin l'assignera plus tard.
     @Column(name = "directeur_id")
     private Long directeurId;
 
-    // Référence à la campagne
     @NotNull(message = "La campagne est obligatoire")
-    @ManyToOne(fetch = FetchType.EAGER)  // ← Ajoute fetch = FetchType.EAGER
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "campagne_id", nullable = false)
     private Campagne campagne;
 
@@ -49,7 +48,6 @@ public class Inscription {
     @Column(nullable = false)
     private StatutInscription statut = StatutInscription.BROUILLON;
 
-    // Informations du dossier
     @NotBlank(message = "Le sujet de thèse est obligatoire")
     @Column(name = "sujet_these", nullable = false, length = 500)
     private String sujetThese;
@@ -61,16 +59,16 @@ public class Inscription {
     private String collaborationExterne;
 
     @Column(name = "annee_inscription")
-    private Integer anneeInscription; // 1, 2, 3, etc.
+    private Integer anneeInscription;
 
     @Column(name = "date_premiere_inscription")
     private LocalDate datePremiereInscription;
 
-    // Documents associés
+    // Relation avec les documents (CV, Diplômes, etc.)
     @OneToMany(mappedBy = "inscription", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Document> documents = new ArrayList<>();
 
-    // Commentaires de validation
+    // Commentaires pour le workflow de validation
     @Column(name = "commentaire_directeur", length = 1000)
     private String commentaireDirecteur;
 
@@ -83,6 +81,7 @@ public class Inscription {
     @Column(name = "date_validation_admin")
     private LocalDateTime dateValidationAdmin;
 
+    // Champs d'audit
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -100,13 +99,9 @@ public class Inscription {
         updatedAt = LocalDateTime.now();
     }
 
-    // Méthodes utilitaires
-    public boolean peutEtreSoumis() {
-        return statut == StatutInscription.BROUILLON &&
-                !documents.isEmpty();
-    }
-
-    public boolean estValide() {
-        return statut == StatutInscription.VALIDE_ADMIN;
+    // Méthode utilitaire pour ajouter un document et maintenir la relation bidirectionnelle
+    public void addDocument(Document doc) {
+        documents.add(doc);
+        doc.setInscription(this);
     }
 }

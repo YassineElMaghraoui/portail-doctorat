@@ -16,32 +16,32 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
   imports: [CommonModule, ReactiveFormsModule, RouterLink, MainLayoutComponent],
   template: `
     <app-main-layout>
-      <div class="page">
-        <header class="page-header">
-          <a routerLink="/inscriptions" class="back-link">
-            <i class="bi bi-arrow-left"></i> Retour aux inscriptions
-          </a>
-          <h1>
-            {{ isEditMode() ? 'Modifier l’inscription' : 'Nouvelle inscription' }}
-          </h1>
-          <p class="text-muted">
-            {{ isEditMode()
-              ? 'Mettez à jour les informations de votre dossier.'
-              : 'Remplissez le formulaire ci-dessous pour candidater.' }}
-          </p>
-        </header>
+      <div class="page-container">
+        
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <a routerLink="/inscriptions" class="text-decoration-none text-secondary mb-2 d-inline-block">
+              <i class="bi bi-arrow-left"></i> Retour aux inscriptions
+            </a>
+            <h2 class="fw-bold mb-0">
+              {{ isEditMode() ? 'Modifier mon dossier' : 'Nouvelle Candidature' }}
+            </h2>
+            <p class="text-muted">Remplissez le formulaire ci-dessous pour postuler au cycle doctoral.</p>
+          </div>
+        </div>
 
-        <!-- ALERTE ELIGIBILITE -->
+        <!-- Alerte Éligibilité (Blocage si besoin) -->
         @if (eligibilite() && !eligibilite()!.eligible) {
-          <div class="alert alert-danger shadow-sm">
-            <div class="d-flex gap-3">
-              <i class="bi bi-exclamation-octagon-fill fs-4"></i>
+          <div class="alert alert-danger shadow-sm border-0">
+            <div class="d-flex gap-3 align-items-center">
+              <i class="bi bi-exclamation-octagon-fill fs-2"></i>
               <div>
-                <h5 class="alert-heading">Inscription impossible</h5>
+                <h5 class="alert-heading fw-bold">Inscription impossible</h5>
                 <p class="mb-0">{{ eligibilite()!.message }}</p>
                 @if (eligibilite()!.derogationRequise && !eligibilite()!.derogationObtenue) {
-                  <a routerLink="/derogations/nouvelle" class="btn btn-sm btn-outline-danger mt-2">
-                    Effectuer une demande de dérogation
+                  <a routerLink="/derogations/nouvelle" class="btn btn-sm btn-light text-danger fw-bold mt-2">
+                    Demander une dérogation
                   </a>
                 }
               </div>
@@ -49,24 +49,49 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
           </div>
         }
 
-        <!-- FORMULAIRE (Si éligible) -->
+        <!-- FORMULAIRE PRINCIPAL -->
         @if (eligibilite()?.eligible !== false) {
-          <div class="card shadow-sm border-0">
-            <div class="card-body p-4">
+          <form [formGroup]="inscriptionForm" (ngSubmit)="onSubmit()">
+            
+            <!-- BLOC 1 : INFORMATIONS PERSONNELLES (Lecture seule) -->
+            <div class="card shadow-sm border-0 mb-4">
+              <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-primary"><i class="bi bi-person-vcard me-2"></i>Informations Personnelles</h5>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label text-muted small fw-bold">Nom complet</label>
+                    <input type="text" class="form-control bg-light" [value]="currentUserName" disabled>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label text-muted small fw-bold">Email</label>
+                    <input type="text" class="form-control bg-light" [value]="currentUserEmail" disabled>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label text-muted small fw-bold">Téléphone</label>
+                    <input type="text" class="form-control bg-light" [value]="currentUserPhone || 'Non renseigné'" disabled>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-              @if (errorMessage()) {
-                <div class="alert alert-danger mb-4">{{ errorMessage() }}</div>
-              }
+            <!-- BLOC 2 : DONNÉES ACADÉMIQUES -->
+            <div class="card shadow-sm border-0 mb-4">
+              <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-primary"><i class="bi bi-mortarboard me-2"></i>Projet de Thèse</h5>
+              </div>
+              <div class="card-body">
+                
+                @if (errorMessage()) {
+                  <div class="alert alert-danger mb-3">{{ errorMessage() }}</div>
+                }
 
-              <form [formGroup]="inscriptionForm" (ngSubmit)="onSubmit()">
-
-                <!-- 1. INFO ACADEMIQUES -->
-                <h5 class="text-primary border-bottom pb-2 mb-3">1. Informations Académiques</h5>
-                <div class="row g-3 mb-4">
+                <div class="row g-3 mb-3">
                   <div class="col-md-6">
-                    <label class="form-label fw-bold">Campagne *</label>
-                    <select class="form-control form-select" formControlName="campagneId">
-                      <option value="">-- Choisir une campagne --</option>
+                    <label class="form-label fw-bold">Campagne d'inscription *</label>
+                    <select class="form-select" formControlName="campagneId">
+                      <option value="">-- Sélectionner --</option>
                       @for (campagne of campagnes(); track campagne.id) {
                         <option [value]="campagne.id">
                           {{ campagne.anneeUniversitaire }} - {{ campagne.titre }}
@@ -76,90 +101,112 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
                   </div>
                   <div class="col-md-6">
                     <label class="form-label fw-bold">Type d'inscription *</label>
-                    <select class="form-control form-select" formControlName="typeInscription">
+                    <select class="form-select" formControlName="typeInscription">
                       <option value="PREMIERE_INSCRIPTION">Première inscription</option>
                       <option value="REINSCRIPTION">Réinscription</option>
                     </select>
                   </div>
                 </div>
 
-                <!-- 2. INFO THESE -->
-                <h5 class="text-primary border-bottom pb-2 mb-3">2. Thèse et Encadrement</h5>
                 <div class="mb-3">
                   <label class="form-label fw-bold">Sujet de thèse *</label>
-                  <textarea class="form-control" rows="3" formControlName="sujetThese"
-                            placeholder="Intitulé complet du sujet de thèse..."></textarea>
+                  <textarea class="form-control" rows="3" formControlName="sujetThese" 
+                    placeholder="Intitulé complet du sujet de recherche..."></textarea>
                 </div>
 
                 <div class="row g-3 mb-3">
                   <div class="col-md-6">
                     <label class="form-label fw-bold">Laboratoire d'accueil *</label>
-                    <input class="form-control" formControlName="laboratoireAccueil" placeholder="Ex: LISAC" />
+                    <input type="text" class="form-control" formControlName="laboratoireAccueil" placeholder="Ex: LISAC, LRI...">
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label fw-bold">ID Directeur de thèse *</label>
-                    <input type="number" class="form-control" formControlName="directeurId" placeholder="ID numérique (Ex: 25)" />
-                    <div class="form-text">Demandez cet ID à votre directeur.</div>
+                    <label class="form-label fw-bold">Collaboration externe</label>
+                    <input type="text" class="form-control" formControlName="collaborationExterne" placeholder="Entreprise ou organisme (Optionnel)">
                   </div>
                 </div>
-
-                <div class="mb-4">
-                  <label class="form-label fw-bold">Collaboration externe</label>
-                  <input class="form-control" formControlName="collaborationExterne" placeholder="Entreprise ou Organisme (Optionnel)" />
+                
+                <div class="alert alert-info py-2 small">
+                  <i class="bi bi-info-circle me-1"></i> Le directeur de thèse sera assigné par l'administration après étude du dossier.
                 </div>
-
-                <!-- 3. DOCUMENTS (UPLOAD) -->
-                <h5 class="text-primary border-bottom pb-2 mb-3">3. Pièces Justificatives</h5>
-                <div class="bg-light p-3 rounded mb-4 border">
-                  <div class="mb-3">
-                    <label class="form-label fw-bold">Ajouter des fichiers</label>
-                    <input type="file" class="form-control" multiple (change)="onFileSelected($event)" accept=".pdf,.jpg,.jpeg,.png">
-                    <div class="form-text">
-                      <i class="bi bi-info-circle"></i> CV, Diplômes, CIN. (PDF/JPG, Max 5Mo).
-                    </div>
-                  </div>
-
-                  <!-- Liste des fichiers -->
-                  @if (selectedFiles.length > 0) {
-                    <ul class="list-group">
-                      @for (file of selectedFiles; track file.name) {
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                          <span class="text-truncate">
-                            <i class="bi bi-file-earmark-check-fill text-success me-2"></i>{{ file.name }}
-                          </span>
-                          <span class="badge bg-secondary">{{ (file.size / 1024 / 1024) | number:'1.2-2' }} MB</span>
-                        </li>
-                      }
-                    </ul>
-                  } @else {
-                    <div class="text-muted small fst-italic">Aucun fichier sélectionné pour le moment.</div>
-                  }
-                </div>
-
-                <!-- BOUTONS -->
-                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                  <button type="button" class="btn btn-light border" routerLink="/inscriptions">Annuler</button>
-                  <button type="submit" class="btn btn-primary px-4" [disabled]="isLoading() || inscriptionForm.invalid">
-                    @if (isLoading()) {
-                      <span class="spinner-border spinner-border-sm me-2"></span> Traitement...
-                    } @else {
-                      <i class="bi bi-save me-2"></i> {{ isEditMode() ? 'Mettre à jour' : 'Enregistrer le brouillon' }}
-                    }
-                  </button>
-                </div>
-
-              </form>
+              </div>
             </div>
-          </div>
+
+            <!-- BLOC 3 : PIÈCES JUSTIFICATIVES -->
+            <div class="card shadow-sm border-0 mb-4">
+              <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-primary"><i class="bi bi-paperclip me-2"></i>Documents Requis</h5>
+              </div>
+              <div class="card-body">
+                <div class="alert alert-light border mb-3">
+                  <i class="bi bi-info-circle-fill text-info me-2"></i>
+                  Veuillez téléverser : <strong>CV, Diplômes, Lettre de motivation, CIN.</strong> (PDF ou Images, Max 10Mo).
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Sélectionner les fichiers</label>
+                  <input type="file" class="form-control" multiple (change)="onFileSelected($event)" accept=".pdf,.jpg,.jpeg,.png">
+                </div>
+
+                <!-- Liste des fichiers en cours d'upload -->
+                @if (selectedFiles.length > 0) {
+                  <ul class="list-group">
+                    @for (file of selectedFiles; track file.name) {
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                          <i class="bi bi-file-earmark-check text-success me-2"></i>
+                          {{ file.name }}
+                          <span class="text-muted small ms-2">({{ (file.size / 1024 / 1024) | number:'1.2-2' }} MB)</span>
+                        </div>
+                        
+                        <!-- Indicateur de statut -->
+                        @if (isUploaded(file.name)) {
+                          <span class="badge bg-success"><i class="bi bi-check"></i> Envoyé</span>
+                        } @else {
+                          <div class="spinner-border spinner-border-sm text-primary"></div>
+                        }
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                    <div class="text-muted small fst-italic ps-1">Aucun document ajouté.</div>
+                }
+              </div>
+            </div>
+
+            <!-- ACTION BAR -->
+            <div class="d-flex justify-content-end gap-3 pb-5">
+              <button type="button" class="btn btn-lg btn-outline-secondary px-4" routerLink="/inscriptions">
+                Annuler
+              </button>
+              <button type="submit" class="btn btn-lg btn-primary px-4" 
+                [disabled]="isLoading() || inscriptionForm.invalid || isUploading">
+                
+                @if (isLoading()) {
+                  <span class="spinner-border spinner-border-sm me-2"></span> Traitement...
+                } @else if (isUploading) {
+                  <span class="spinner-border spinner-border-sm me-2"></span> Envoi fichiers...
+                } @else {
+                  <i class="bi bi-send me-2"></i> 
+                  {{ isEditMode() ? 'Mettre à jour' : 'Soumettre le dossier' }}
+                }
+              </button>
+            </div>
+
+          </form>
         }
       </div>
     </app-main-layout>
-  `
+  `,
+  styles: [`
+    .page-container { max-width: 900px; margin: 0 auto; padding-top: 1rem; }
+    .card-header { border-bottom: 1px solid rgba(0,0,0,0.05); }
+  `]
 })
 export class InscriptionFormComponent implements OnInit {
   inscriptionForm: FormGroup;
   campagnes = signal<Campagne[]>([]);
   eligibilite = signal<EligibiliteReinscription | null>(null);
+
   isLoading = signal(false);
   errorMessage = signal('');
   isEditMode = signal(false);
@@ -168,6 +215,14 @@ export class InscriptionFormComponent implements OnInit {
   // Gestion des fichiers
   selectedFiles: File[] = [];
   uploadedDocIds: number[] = [];
+  isUploading = false;
+  uploadedFileNames: string[] = [];
+
+  // Infos user (pour affichage lecture seule)
+  currentUser = this.authService.currentUser();
+  currentUserName = `${this.currentUser?.prenom} ${this.currentUser?.nom}`;
+  currentUserEmail = this.currentUser?.email;
+  currentUserPhone = this.currentUser?.telephone;
 
   constructor(
       private fb: FormBuilder,
@@ -183,8 +238,8 @@ export class InscriptionFormComponent implements OnInit {
       typeInscription: ['PREMIERE_INSCRIPTION', Validators.required],
       sujetThese: ['', [Validators.required, Validators.minLength(20)]],
       laboratoireAccueil: ['', Validators.required],
-      collaborationExterne: [''],
-      directeurId: ['', Validators.required]
+      collaborationExterne: ['']
+      // ❌ CHAMP DIRECTEUR SUPPRIMÉ
     });
   }
 
@@ -192,7 +247,6 @@ export class InscriptionFormComponent implements OnInit {
     this.loadCampagnes();
     this.checkEligibilite();
 
-    // Mode édition ?
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode.set(true);
@@ -208,9 +262,8 @@ export class InscriptionFormComponent implements OnInit {
   }
 
   private checkEligibilite(): void {
-    const userId = this.authService.currentUser()?.id;
-    if (userId) {
-      this.derogationService.verifierEligibilite(userId).subscribe({
+    if (this.currentUser?.id) {
+      this.derogationService.verifierEligibilite(this.currentUser.id).subscribe({
         next: data => this.eligibilite.set(data)
       });
     }
@@ -224,33 +277,34 @@ export class InscriptionFormComponent implements OnInit {
           sujetThese: data.sujetThese,
           laboratoireAccueil: data.laboratoireAccueil,
           collaborationExterne: data.collaborationExterne,
-          directeurId: data.directeurId,
           typeInscription: data.typeInscription,
           campagneId: data.campagne?.id
         });
         this.isLoading.set(false);
       },
       error: () => {
-        this.errorMessage.set('Impossible de charger l’inscription');
+        this.errorMessage.set('Impossible de charger le dossier');
         this.isLoading.set(false);
       }
     });
   }
 
-  // --- GESTION FICHIERS ---
+  // --- GESTION FICHIERS (UPLOAD) ---
 
   onFileSelected(event: any): void {
     const files = event.target.files;
-    if (files) {
+    if (files && files.length > 0) {
+      this.isUploading = true;
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
 
         if (validTypes.includes(file.type)) {
           this.selectedFiles.push(file);
-          this.uploadFile(file); // Upload direct
+          this.uploadFile(file);
         } else {
-          alert(`Fichier "${file.name}" invalide. PDF/Images uniquement.`);
+          alert(`Format invalide pour "${file.name}". PDF ou Images uniquement.`);
         }
       }
     }
@@ -261,17 +315,25 @@ export class InscriptionFormComponent implements OnInit {
       next: (response: any) => {
         if (response && response.id) {
           this.uploadedDocIds.push(response.id);
-          console.log('✅ Document uploadé ID:', response.id);
+          this.uploadedFileNames.push(file.name);
+
+          if (this.uploadedFileNames.length === this.selectedFiles.length) {
+            this.isUploading = false;
+          }
         }
       },
       error: () => {
-        alert("Erreur upload fichier : " + file.name);
-        this.selectedFiles = this.selectedFiles.filter(f => f !== file);
+        alert("Erreur technique lors de l'envoi de " + file.name);
+        this.isUploading = false;
       }
     });
   }
 
-  // --- SUBMIT ---
+  isUploaded(fileName: string): boolean {
+    return this.uploadedFileNames.includes(fileName);
+  }
+
+  // --- SOUMISSION ---
 
   onSubmit(): void {
     if (this.inscriptionForm.invalid) {
@@ -279,21 +341,27 @@ export class InscriptionFormComponent implements OnInit {
       return;
     }
 
+    if (this.isUploading) {
+      alert("Veuillez attendre la fin du téléversement des fichiers.");
+      return;
+    }
+
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.currentUser?.id;
     const formValue = this.inscriptionForm.value;
 
     const request = {
       doctorantId: userId!,
-      directeurId: Number(formValue.directeurId),
+      // Note: Pas de directeurId, le backend mettra null par défaut
       campagne: { id: Number(formValue.campagneId) },
       sujetThese: formValue.sujetThese,
       laboratoireAccueil: formValue.laboratoireAccueil,
       collaborationExterne: formValue.collaborationExterne,
       typeInscription: formValue.typeInscription as TypeInscription,
-      // Ajout des documents au payload
+
+      // Liaison des documents uploadés
       documents: this.uploadedDocIds.map(id => ({ id: id }))
     };
 
@@ -302,9 +370,19 @@ export class InscriptionFormComponent implements OnInit {
         : this.inscriptionService.create(request as any);
 
     operation.subscribe({
-      next: () => this.router.navigate(['/inscriptions']),
+      next: () => {
+        if (!this.isEditMode()) {
+          if(confirm("Dossier enregistré en BROUILLON.\nVoulez-vous le soumettre définitivement à l'administration ?")) {
+            this.router.navigate(['/inscriptions']);
+          } else {
+            this.router.navigate(['/inscriptions']);
+          }
+        } else {
+          this.router.navigate(['/inscriptions']);
+        }
+      },
       error: () => {
-        this.errorMessage.set(this.isEditMode() ? 'Erreur modification' : 'Erreur création');
+        this.errorMessage.set('Une erreur est survenue lors de l\'enregistrement.');
         this.isLoading.set(false);
       }
     });

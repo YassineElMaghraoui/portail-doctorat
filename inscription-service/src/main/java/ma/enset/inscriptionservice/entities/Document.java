@@ -24,22 +24,16 @@ public class Document {
     @JoinColumn(name = "inscription_id", nullable = false)
     private Inscription inscription;
 
+    // ✅ NOUVEAU : ID du fichier dans DocumentService
+    @Column(name = "document_service_id", nullable = false)
+    private Long documentServiceId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TypeDocument typeDocument;
+    private TypeDocument typeDocument = TypeDocument.AUTRE; // Valeur par défaut si non spécifié
 
-    @NotBlank(message = "Le nom du fichier est obligatoire")
-    @Column(name = "nom_fichier", nullable = false)
+    @Column(name = "nom_fichier")
     private String nomFichier;
-
-    @Column(name = "chemin_fichier", nullable = false)
-    private String cheminFichier;
-
-    @Column(name = "taille_fichier")
-    private Long tailleFichier; // en bytes
-
-    @Column(name = "content_type")
-    private String contentType; // application/pdf, image/jpeg, etc.
 
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private LocalDateTime uploadedAt;

@@ -11,38 +11,24 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    /**
-     * Trouve un utilisateur par son nom d'utilisateur
-     */
-    Optional<User> findByUsername(String username);
+    // ✅ MODIFICATION : Recherche par Matricule
+    Optional<User> findByMatricule(String matricule);
 
-    /**
-     * Trouve un utilisateur par son email
-     */
+    // Garde la compatibilité avec Spring Security qui cherche "username"
+    default Optional<User> findByUsername(String username) {
+        return findByMatricule(username);
+    }
+
     Optional<User> findByEmail(String email);
 
-    /**
-     * Vérifie si un username existe
-     */
-    boolean existsByUsername(String username);
+    // ✅ MODIFICATION
+    boolean existsByMatricule(String matricule);
 
-    /**
-     * Vérifie si un email existe
-     */
     boolean existsByEmail(String email);
 
-    /**
-     * Trouve tous les utilisateurs par rôle
-     */
     List<User> findByRole(Role role);
 
-    /**
-     * Trouve les utilisateurs actifs
-     */
     List<User> findByEnabledTrue();
 
-    /**
-     * Trouve les utilisateurs par rôle et actifs
-     */
     List<User> findByRoleAndEnabledTrue(Role role);
 }

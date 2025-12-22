@@ -28,8 +28,10 @@ import { Role } from '@core/models/user.model';
         }
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+
+          <!-- CHAMP IDENTIFIANT -->
           <div class="form-group">
-            <label class="form-label" for="username">Nom d'utilisateur ou Email</label>
+            <label class="form-label" for="username">Matricule ou Email</label>
             <div class="input-group">
               <i class="bi bi-person"></i>
               <input
@@ -46,21 +48,19 @@ import { Role } from '@core/models/user.model';
             }
           </div>
 
+          <!-- CHAMP MOT DE PASSE (Sans bouton oeil) -->
           <div class="form-group">
             <label class="form-label" for="password">Mot de passe</label>
             <div class="input-group">
               <i class="bi bi-lock"></i>
               <input
-                  [type]="showPassword() ? 'text' : 'password'"
+                  type="password"
                   id="password"
                   class="form-control"
                   formControlName="password"
                   placeholder="Entrez votre mot de passe"
                   [class.is-invalid]="isFieldInvalid('password')"
               />
-              <button type="button" class="btn-toggle-password" (click)="togglePassword()">
-                <i class="bi" [class.bi-eye]="!showPassword()" [class.bi-eye-slash]="showPassword()"></i>
-              </button>
             </div>
             @if (isFieldInvalid('password')) {
               <div class="invalid-feedback">Ce champ est obligatoire</div>
@@ -70,7 +70,7 @@ import { Role } from '@core/models/user.model';
           <button type="submit" class="btn btn-primary btn-block" [disabled]="isLoading()">
             @if (isLoading()) {
               <span class="spinner"></span>
-              Connexion en cours...
+              Connexion...
             } @else {
               <i class="bi bi-box-arrow-in-right"></i>
               Se connecter
@@ -117,59 +117,41 @@ import { Role } from '@core/models/user.model';
         justify-content: center;
         margin: 0 auto 1rem;
 
-        i {
-          font-size: 2rem;
-          color: white;
-        }
+        i { font-size: 2rem; color: white; }
       }
 
-      h1 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        color: #1e293b;
-      }
-
-      p {
-        color: #64748b;
-        font-size: 0.9375rem;
-      }
+      h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #1e293b; }
+      p { color: #64748b; font-size: 0.9375rem; }
     }
 
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
+    .form-group { margin-bottom: 1.25rem; }
 
     .input-group {
       position: relative;
 
+      /* Icône à gauche (User/Lock) */
       i:first-child {
         position: absolute;
         left: 1rem;
         top: 50%;
         transform: translateY(-50%);
         color: #94a3b8;
+        z-index: 2;
       }
 
       .form-control {
-        padding-left: 2.75rem;
-        padding-right: 2.75rem;
+        padding-left: 2.75rem; /* Espace pour l'icône de gauche */
+        padding-right: 1rem;   /* Padding normal à droite */
+        height: 48px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        width: 100%;
       }
 
-      .btn-toggle-password {
-        position: absolute;
-        right: 0.5rem;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: #94a3b8;
-        cursor: pointer;
-        padding: 0.5rem;
-
-        &:hover {
-          color: #64748b;
-        }
+      .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
       }
     }
 
@@ -178,6 +160,16 @@ import { Role } from '@core/models/user.model';
       padding: 0.875rem;
       font-size: 1rem;
       margin-top: 0.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-block:hover:not(:disabled) {
+      opacity: 0.95;
+      transform: translateY(-1px);
     }
 
     .auth-footer {
@@ -185,25 +177,28 @@ import { Role } from '@core/models/user.model';
       margin-top: 1.5rem;
       padding-top: 1.5rem;
       border-top: 1px solid #e2e8f0;
+      p { color: #64748b; font-size: 0.9375rem; }
+    }
 
-      p {
-        color: #64748b;
-        font-size: 0.9375rem;
-      }
+    .auth-footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
     }
 
     .alert {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;
+      padding: 0.75rem; border-radius: 8px; background: #fee2e2; color: #b91c1c;
+    }
+
+    .invalid-feedback {
+      font-size: 0.8rem; color: #dc2626; margin-top: 0.25rem;
     }
   `]
 })
 export class LoginComponent {
   loginForm: FormGroup;
   isLoading = signal(false);
-  showPassword = signal(false);
   errorMessage = signal('');
 
   constructor(
@@ -216,10 +211,6 @@ export class LoginComponent {
       username: ['', Validators.required],
       password: ['', Validators.required]
     });
-  }
-
-  togglePassword(): void {
-    this.showPassword.update(v => !v);
   }
 
   isFieldInvalid(field: string): boolean {
@@ -236,29 +227,23 @@ export class LoginComponent {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    // On s'abonne à la réponse
     this.authService.login(this.loginForm.value).subscribe({
       next: (response) => {
-        // 🔴 ON UTILISE DIRECTEMENT LA RÉPONSE DU SERVEUR
-        console.log("✅ Réponse Login reçue :", response);
-        const roleRecu = response.role; // Le rôle brut qui vient du Backend
+        // Logique de redirection
+        const roleRecu = response.role;
 
         if (roleRecu === 'CANDIDAT') {
-          console.log("🔒 C'est un CANDIDAT -> Salle d'attente");
           this.router.navigate(['/auth/pending-approval']);
         }
         else if (roleRecu === 'ADMIN') {
-          console.log("🛡️ C'est un ADMIN");
           this.router.navigate(['/admin/users']);
         }
         else {
-          console.log("🎓 C'est un DOCTORANT/DIRECTEUR");
           const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
           this.router.navigateByUrl(returnUrl);
         }
       },
       error: (error) => {
-        console.error("❌ Erreur Login:", error);
         this.errorMessage.set(error.message || 'Identifiants incorrects');
         this.isLoading.set(false);
       }

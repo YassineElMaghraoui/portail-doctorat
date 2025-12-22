@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.userservice.dto.UserDTO;
 import ma.enset.userservice.entities.User;
-import ma.enset.userservice.enums.Role; // ✅ IMPORTANT : Import de l'Enum Role
+import ma.enset.userservice.enums.Role;
 import ma.enset.userservice.mappers.UserMapper;
 import ma.enset.userservice.services.UserService;
 import org.springframework.http.HttpStatus;
@@ -23,7 +23,7 @@ import java.util.Optional;
 public class UserController {
 
     private final UserService userService;
-    private final UserMapper userMapper; // ✅ Mis en final pour l'injection par constructeur
+    private final UserMapper userMapper;
 
     @PostMapping
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
@@ -51,42 +51,39 @@ public class UserController {
 
     @GetMapping("/username/{username}")
     public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
-        log.info("REST request to get user by username: {}", username);
         Optional<User> userOpt = userService.getUserByUsername(username);
-        if (userOpt.isPresent()) {
-            return ResponseEntity.ok(userOpt.get());
-        }
-        return ResponseEntity.notFound().build();
+        return userOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
-        log.info("REST request to get user by email: {}", email);
         Optional<User> userOpt = userService.getUserByEmail(email);
-        if (userOpt.isPresent()) {
-            return ResponseEntity.ok(userOpt.get());
-        }
-        return ResponseEntity.notFound().build();
+        return userOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // 🔴🔴🔴 NOUVEAU ENDPOINT POUR L'ADMIN DASHBOARD 🔴🔴🔴
     @GetMapping("/role/{role}")
     public ResponseEntity<List<User>> getUsersByRole(@PathVariable Role role) {
         log.info("REST request to get users by role: {}", role);
         List<User> users = userService.getUsersByRole(role);
         return ResponseEntity.ok(users);
     }
-    // ---------------------------------------------------------
 
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
-        log.info("REST request to update user with id: {}", id);
         try {
             User updatedUser = userService.updateUser(id, user);
             return ResponseEntity.ok(updatedUser);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    // ✅ NOUVEL ENDPOINT SPÉCIFIQUE
+    // URL : PUT /api/users/{id}/role?newRole=DOCTORANT
+    @PutMapping("/{id}/role")
+    public ResponseEntity<User> changeUserRole(@PathVariable Long id, @RequestParam Role newRole) {
+        log.info("REST request to change role of user {} to {}", id, newRole);
+        return ResponseEntity.ok(userService.changeRole(id, newRole));
     }
 
     @DeleteMapping("/{id}")
@@ -105,23 +102,15 @@ public class UserController {
 
     @GetMapping("/{id}/dto")
     public ResponseEntity<UserDTO> getUserDTO(@PathVariable Long id) {
-        log.info("REST request to get User DTO by id: {}", id);
         Optional<User> userOpt = userService.getUserById(id);
-        if (userOpt.isPresent()) {
-            UserDTO dto = userMapper.toDTO(userOpt.get());
-            return ResponseEntity.ok(dto);
-        }
-        return ResponseEntity.notFound().build();
+        return userOpt.map(user -> ResponseEntity.ok(userMapper.toDTO(user)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/username/{username}/dto")
     public ResponseEntity<UserDTO> getUserDTOByUsername(@PathVariable String username) {
-        log.info("REST request to get User DTO by username: {}", username);
         Optional<User> userOpt = userService.getUserByUsername(username);
-        if (userOpt.isPresent()) {
-            UserDTO dto = userMapper.toDTO(userOpt.get());
-            return ResponseEntity.ok(dto);
-        }
-        return ResponseEntity.notFound().build();
+        return userOpt.map(user -> ResponseEntity.ok(userMapper.toDTO(user)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

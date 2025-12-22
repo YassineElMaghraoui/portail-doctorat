@@ -22,6 +22,8 @@ public interface UserService {
 
     List<User> getAllUsers();
 
-    // 🔴 AJOUTÉ : Nécessaire pour le dashboard Admin
     List<User> getUsersByRole(Role role);
+
+    // ✅ C'EST CETTE LIGNE QUI MANQUAIT :
+    User changeRole(Long id, Role newRole);
 }

@@ -37,12 +37,7 @@ public class UserServiceImpl implements UserService {
                     existingUser.setEmail(user.getEmail());
                     existingUser.setNom(user.getNom());
                     existingUser.setPrenom(user.getPrenom());
-
-                    // L'admin peut changer le rôle ici (CANDIDAT -> DOCTORANT)
-                    if(user.getRole() != null) {
-                        existingUser.setRole(user.getRole());
-                    }
-
+                    existingUser.setRole(user.getRole());
                     existingUser.setEnabled(user.getEnabled());
 
                     if (user.getPassword() != null && !user.getPassword().isEmpty()) {
@@ -80,10 +75,19 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll();
     }
 
-    // 🔴 AJOUTÉ : Implémentation de la recherche par rôle
     @Override
     public List<User> getUsersByRole(Role role) {
         log.info("Fetching users with role: {}", role);
         return userRepository.findByRole(role);
+    }
+
+    // ✅ NOUVELLE MÉTHODE : Changer le rôle uniquement
+    @Override
+    public User changeRole(Long id, Role newRole) {
+        log.info("Changement de rôle pour user {}: {}", id, newRole);
+        return userRepository.findById(id).map(user -> {
+            user.setRole(newRole);
+            return userRepository.save(user);
+        }).orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
     }
 }

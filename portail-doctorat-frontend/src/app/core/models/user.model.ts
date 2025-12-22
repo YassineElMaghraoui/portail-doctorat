@@ -1,11 +1,15 @@
 export interface User {
   id: number;
-  username: string;
+  username: string; // C'est le Matricule
   email: string;
   nom: string;
   prenom: string;
-  role: Role | string; // Accepte string au cas où
+  role: Role | string;
   enabled: boolean;
+
+  // ✅ AJOUTEZ CETTE LIGNE :
+  telephone?: string;
+
   createdAt?: string;
   updatedAt?: string;
 }
@@ -20,30 +24,27 @@ export interface AuthResponse {
   email: string;
   nom: string;
   prenom: string;
-  role: string; // Le backend renvoie une string
+  role: string;
   message: string;
 }
 
-// 🔴 C'EST ICI QUE CA SE JOUE :
 export enum Role {
   ADMIN = 'ADMIN',
   DOCTORANT = 'DOCTORANT',
   DIRECTEUR_THESE = 'DIRECTEUR_THESE',
-  CHEF_FILIERE = 'CHEF_FILIERE',
-  RESPONSABLE_CEDOC = 'RESPONSABLE_CEDOC',
-  CANDIDAT = 'CANDIDAT' // <--- VERIFIEZ QUE CETTE LIGNE EST PRÉSENTE !
+  CANDIDAT = 'CANDIDAT'
 }
 
 export interface LoginRequest {
-  username?: string;
-  password?: string;
+  username: string;
+  password: string;
 }
 
 export interface RegisterRequest {
   nom: string;
   prenom: string;
-  username: string;
+  matricule: string;
+  telephone: string;
   email: string;
   password: string;
-  role?: string;
 }
