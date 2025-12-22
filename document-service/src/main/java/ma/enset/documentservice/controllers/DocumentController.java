@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.documentservice.dto.*;
 import ma.enset.documentservice.entities.GeneratedDocument;
+import ma.enset.documentservice.entities.UploadedDocument; // ✅ AJOUT
 import ma.enset.documentservice.enums.DocumentType;
 import ma.enset.documentservice.services.DocumentService;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile; // ✅ AJOUT
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -20,11 +23,48 @@ import java.util.Map;
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin(origins = "*") // Important pour le frontend Angular
 public class DocumentController {
 
     private final DocumentService documentService;
 
-    // ==================== GÉNÉRATION DE DOCUMENTS ====================
+    // =========================================================================
+    // ==================== 📂 ENDPOINTS UPLOAD (Candidats) ====================
+    // =========================================================================
+
+    /**
+     * Uploader un fichier (CV, Diplôme, etc.)
+     */
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UploadedDocument> uploadDocument(@RequestParam("file") MultipartFile file) {
+        log.info("Requête d'upload reçue : {}", file.getOriginalFilename());
+        try {
+            UploadedDocument savedDoc = documentService.uploadFile(file);
+            // On ne renvoie pas le binaire lourd dans la réponse JSON
+            savedDoc.setData(null);
+            return ResponseEntity.ok(savedDoc);
+        } catch (IOException e) {
+            log.error("Erreur upload", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Télécharger un fichier uploadé par ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<byte[]> getUploadedDocument(@PathVariable Long id) {
+        return documentService.getUploadedFile(id)
+                .map(doc -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(doc.getTypeFichier()))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + doc.getNomFichier() + "\"")
+                        .body(doc.getData()))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // =========================================================================
+    // ==================== 📄 GENERATION DE DOCUMENTS =========================
+    // =========================================================================
 
     /**
      * Générer une attestation d'inscription
@@ -59,13 +99,13 @@ public class DocumentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ==================== TÉLÉCHARGEMENT ====================
+    // ==================== TÉLÉCHARGEMENT (Documents Générés) ====================
 
     /**
-     * Télécharger un document par son ID
+     * Télécharger un document généré par son ID
      */
     @GetMapping("/download/{id}")
-    public ResponseEntity<byte[]> downloadDocument(@PathVariable Long id) {
+    public ResponseEntity<byte[]> downloadGeneratedDocument(@PathVariable Long id) {
         log.info("GET /api/documents/download/{}", id);
 
         try {
@@ -88,10 +128,10 @@ public class DocumentController {
     }
 
     /**
-     * Prévisualiser un document (inline)
+     * Prévisualiser un document généré
      */
     @GetMapping("/preview/{id}")
-    public ResponseEntity<byte[]> previewDocument(@PathVariable Long id) {
+    public ResponseEntity<byte[]> previewGeneratedDocument(@PathVariable Long id) {
         log.info("GET /api/documents/preview/{}", id);
 
         try {
@@ -116,18 +156,18 @@ public class DocumentController {
     // ==================== CONSULTATION ====================
 
     /**
-     * Récupérer un document par son ID
+     * Récupérer un document généré par son ID
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<GeneratedDocument> getDocument(@PathVariable Long id) {
-        log.info("GET /api/documents/{}", id);
+    @GetMapping("/info/{id}")
+    public ResponseEntity<GeneratedDocument> getDocumentInfo(@PathVariable Long id) {
+        log.info("GET /api/documents/info/{}", id);
         return documentService.getDocumentById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Récupérer tous les documents d'un utilisateur
+     * Récupérer tous les documents générés d'un utilisateur
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<GeneratedDocument>> getDocumentsByUser(@PathVariable Long userId) {

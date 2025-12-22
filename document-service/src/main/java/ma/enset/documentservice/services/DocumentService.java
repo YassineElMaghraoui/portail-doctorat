@@ -5,11 +5,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.documentservice.dto.*;
 import ma.enset.documentservice.entities.GeneratedDocument;
+import ma.enset.documentservice.entities.UploadedDocument; // ✅ AJOUT
 import ma.enset.documentservice.enums.DocumentType;
 import ma.enset.documentservice.repositories.DocumentRepository;
+import ma.enset.documentservice.repositories.UploadedDocumentRepository; // ✅ AJOUT
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile; // ✅ AJOUT
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,6 +31,7 @@ public class DocumentService {
 
     private final PdfGeneratorService pdfGeneratorService;
     private final DocumentRepository documentRepository;
+    private final UploadedDocumentRepository uploadedDocumentRepository; // ✅ AJOUT
     private final ObjectMapper objectMapper;
 
     @Value("${app.documents.storage-path:./documents}")
@@ -35,6 +39,37 @@ public class DocumentService {
 
     @Value("${app.documents.base-url:http://localhost:8085/api/documents}")
     private String baseUrl;
+
+    // =========================================================================
+    // ==================== 📂 GESTION DE L'UPLOAD =============================
+    // =========================================================================
+
+    /**
+     * Uploader un fichier (CV, Diplôme...)
+     */
+    @Transactional
+    public UploadedDocument uploadFile(MultipartFile file) throws IOException {
+        log.info("Upload fichier: {} ({} bytes)", file.getOriginalFilename(), file.getSize());
+
+        UploadedDocument doc = UploadedDocument.builder()
+                .nomFichier(file.getOriginalFilename())
+                .typeFichier(file.getContentType())
+                .data(file.getBytes()) // Stockage BDD pour simplifier (BLOB)
+                .build();
+
+        return uploadedDocumentRepository.save(doc);
+    }
+
+    /**
+     * Récupérer un fichier uploadé par ID
+     */
+    public Optional<UploadedDocument> getUploadedFile(Long id) {
+        return uploadedDocumentRepository.findById(id);
+    }
+
+    // =========================================================================
+    // ==================== 📄 GÉNÉRATION DE PDF ===============================
+    // =========================================================================
 
     /**
      * Génère et sauvegarde une attestation d'inscription
@@ -193,14 +228,14 @@ public class DocumentService {
     }
 
     /**
-     * Récupère un document par son ID
+     * Récupère un document généré par son ID
      */
     public Optional<GeneratedDocument> getDocumentById(Long id) {
         return documentRepository.findById(id);
     }
 
     /**
-     * Récupère le contenu binaire d'un document
+     * Récupère le contenu binaire d'un document généré
      */
     public byte[] getDocumentContent(Long id) throws IOException {
         GeneratedDocument document = documentRepository.findById(id)
