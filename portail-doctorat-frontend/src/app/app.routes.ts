@@ -20,13 +20,22 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard] // <--- CETTE LIGNE EST OBLIGATOIRE
   },
 
   // Inscriptions
   {
     path: 'inscriptions',
     loadChildren: () => import('./features/inscriptions/inscriptions.routes').then(m => m.INSCRIPTIONS_ROUTES),
+    canActivate: [authGuard]
+  },
+
+  // AJOUTE CECI : Validations (Pour les directeurs : valider les demandes)
+  {
+    path: 'validations',
+    // CORRECTION DU CHEMIN ICI :
+    loadComponent: () => import('./features/inscriptions/inscription-validation/inscription-validation.component')
+        .then(m => m.InscriptionValidationComponent),
     canActivate: [authGuard]
   },
 
@@ -71,5 +80,11 @@ export const routes: Routes = [
   {
     path: '**',
     loadComponent: () => import('./shared/components/not-found/not-found.component').then(m => m.NotFoundComponent)
-  }
+  },
+
+  {
+    path: 'auth/pending-approval',
+    loadComponent: () => import('./features/auth/pending-approval/pending-approval.component')
+        .then(m => m.PendingApprovalComponent)
+  },
 ];

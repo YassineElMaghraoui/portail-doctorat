@@ -15,11 +15,12 @@ import java.util.List;
 @RequestMapping("/api/campagnes")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*") // Autorise Angular (localhost:4200) à appeler ce service
 public class CampagneController {
 
     private final CampagneService campagneService;
 
+    // Créer une nouvelle campagne
     @PostMapping
     public ResponseEntity<Campagne> createCampagne(@Valid @RequestBody Campagne campagne) {
         log.info("REST request to create campagne: {}", campagne.getTitre());
@@ -27,6 +28,7 @@ public class CampagneController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    // Récupérer toutes les campagnes (C'est souvent cet endpoint que le dropdown appelle)
     @GetMapping
     public ResponseEntity<List<Campagne>> getAllCampagnes() {
         log.info("REST request to get all campagnes");
@@ -34,6 +36,7 @@ public class CampagneController {
         return ResponseEntity.ok(campagnes);
     }
 
+    // Récupérer une campagne par son ID
     @GetMapping("/{id}")
     public ResponseEntity<Campagne> getCampagneById(@PathVariable Long id) {
         log.info("REST request to get campagne by id: {}", id);
@@ -42,6 +45,7 @@ public class CampagneController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Récupérer la campagne active (Très important pour l'inscription par défaut)
     @GetMapping("/active")
     public ResponseEntity<Campagne> getCampagneActive() {
         log.info("REST request to get active campagne");
@@ -50,6 +54,7 @@ public class CampagneController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Mettre à jour une campagne
     @PutMapping("/{id}")
     public ResponseEntity<Campagne> updateCampagne(@PathVariable Long id, @Valid @RequestBody Campagne campagne) {
         log.info("REST request to update campagne with id: {}", id);
@@ -61,6 +66,7 @@ public class CampagneController {
         }
     }
 
+    // Activer spécifiquement une campagne
     @PutMapping("/{id}/activer")
     public ResponseEntity<Campagne> activerCampagne(@PathVariable Long id) {
         log.info("REST request to activate campagne with id: {}", id);
@@ -72,6 +78,7 @@ public class CampagneController {
         }
     }
 
+    // Supprimer une campagne
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCampagne(@PathVariable Long id) {
         log.info("REST request to delete campagne with id: {}", id);

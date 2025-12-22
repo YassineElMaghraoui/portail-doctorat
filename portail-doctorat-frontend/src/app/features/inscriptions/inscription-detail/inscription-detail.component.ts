@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.component';
 import { InscriptionService } from '@core/services/inscription.service';
+import { AuthService } from '@core/services/auth.service';
 import { Inscription, StatutInscription } from '@core/models/inscription.model';
+import { Role } from '@core/models/user.model';
 
 @Component({
   selector: 'app-inscription-detail',
@@ -11,267 +13,232 @@ import { Inscription, StatutInscription } from '@core/models/inscription.model';
   imports: [CommonModule, RouterLink, MainLayoutComponent],
   template: `
     <app-main-layout>
-      <div class="page">
-        <header class="page-header">
-          <a routerLink="/inscriptions" class="back-link">
-            <i class="bi bi-arrow-left"></i> Retour aux inscriptions
-          </a>
-          <h1>Détail de l'inscription</h1>
-        </header>
+      <div class="container-fluid py-4">
+
+        <!-- EN-TÊTE -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <button class="btn btn-outline-secondary" (click)="goBack()">
+            <i class="bi bi-arrow-left"></i> Retour
+          </button>
+
+          <span class="badge fs-6 px-3 py-2" [ngClass]="getStatusClass(inscription()?.statut)">
+            {{ inscription()?.statut }}
+          </span>
+        </div>
 
         @if (isLoading()) {
-          <div class="loading-state">
-            <div class="spinner"></div>
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Chargement du dossier...</p>
           </div>
         } @else if (inscription()) {
-          <div class="detail-grid">
-            <!-- Informations principales -->
-            <div class="card">
-              <div class="card-header">
-                <h3>Informations générales</h3>
-                <span class="badge" [class]="getStatutClass(inscription()!.statut)">
-                  {{ getStatutLabel(inscription()!.statut) }}
-                </span>
-              </div>
-              <div class="card-body">
-                <div class="info-grid">
-                  <div class="info-item">
-                    <label>Campagne</label>
-                    <span>{{ inscription()!.campagne?.anneeUniversitaire }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>Type</label>
-                    <span>{{ inscription()!.typeInscription === 'PREMIERE_INSCRIPTION' ? 'Première inscription' : 'Réinscription' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>Année de doctorat</label>
-                    <span>{{ inscription()!.anneeInscription }}ème année</span>
-                  </div>
-                  <div class="info-item">
-                    <label>Date de création</label>
-                    <span>{{ inscription()!.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
-                  </div>
-                </div>
-              </div>
+          <div class="card shadow-sm border-0">
+
+            <div class="card-header bg-white p-4 border-bottom">
+              <h2 class="h4 mb-1">Détail de l'inscription</h2>
+              <p class="text-muted small mb-0">
+                Dossier n°{{ inscription()?.id }} • Créé le {{ inscription()?.createdAt | date:'dd/MM/yyyy à HH:mm' }}
+              </p>
             </div>
 
-            <!-- Sujet de thèse -->
-            <div class="card">
-              <div class="card-header">
-                <h3>Sujet de thèse</h3>
+            <div class="card-body p-4">
+
+              <!-- INFOS GÉNÉRALES -->
+              <h5 class="text-primary mb-3"><i class="bi bi-person-badge me-2"></i>Informations Générales</h5>
+              <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                  <label class="text-uppercase text-muted small fw-bold">Doctorant</label>
+                  <div class="fs-5">{{ inscription()?.doctorantNom || 'Non renseigné' }}</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="text-uppercase text-muted small fw-bold">Type d'inscription</label>
+                  <div class="fs-5">{{ inscription()?.typeInscription }}</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="text-uppercase text-muted small fw-bold">Année Universitaire</label>
+                  <div class="fs-5">{{ inscription()?.campagne?.anneeUniversitaire || '2025-2026' }}</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="text-uppercase text-muted small fw-bold">Année de thèse</label>
+                  <div class="fs-5">{{ inscription()?.anneeInscription || 1 }}ère année</div>
+                </div>
               </div>
-              <div class="card-body">
-                <p>{{ inscription()!.sujetThese }}</p>
+
+              <hr class="text-muted opacity-25">
+
+              <!-- THÈSE -->
+              <h5 class="text-primary mb-3 mt-4"><i class="bi bi-book me-2"></i>Thèse et Encadrement</h5>
+
+              <div class="mb-4">
+                <label class="text-uppercase text-muted small fw-bold">Sujet de thèse</label>
+                <div class="p-3 bg-light border rounded mt-1">
+                  {{ inscription()?.sujetThese }}
+                </div>
               </div>
+
+              <div class="row g-4">
+                <div class="col-md-6">
+                  <label class="text-uppercase text-muted small fw-bold">Laboratoire d'accueil</label>
+                  <div class="fs-6">{{ inscription()?.laboratoireAccueil }}</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="text-uppercase text-muted small fw-bold">Directeur de thèse (ID)</label>
+                  <div class="fs-6">{{ inscription()?.directeurId }}</div>
+                </div>
+                @if (inscription()?.collaborationExterne) {
+                  <div class="col-12">
+                    <label class="text-uppercase text-muted small fw-bold">Collaboration Externe</label>
+                    <div class="fs-6">{{ inscription()?.collaborationExterne }}</div>
+                  </div>
+                }
+              </div>
+
+              <!-- COMMENTAIRES -->
+              @if (inscription()?.commentaireDirecteur) {
+                <div class="alert alert-info mt-4">
+                  <strong><i class="bi bi-chat-quote-fill me-2"></i>Commentaire du Directeur :</strong><br>
+                  {{ inscription()?.commentaireDirecteur }}
+                </div>
+              }
             </div>
 
-            <!-- Laboratoire -->
-            <div class="card">
-              <div class="card-header">
-                <h3>Laboratoire et encadrement</h3>
-              </div>
-              <div class="card-body">
-                <div class="info-grid">
-                  <div class="info-item">
-                    <label>Laboratoire d'accueil</label>
-                    <span>{{ inscription()!.laboratoireAccueil }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>Directeur de thèse (ID)</label>
-                    <span>{{ inscription()!.directeurId }}</span>
-                  </div>
-                  @if (inscription()!.collaborationExterne) {
-                    <div class="info-item">
-                      <label>Collaboration externe</label>
-                      <span>{{ inscription()!.collaborationExterne }}</span>
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
+            <!-- ACTIONS -->
+            <div class="card-footer bg-light p-4 border-top">
 
-            <!-- Commentaires de validation -->
-            @if (inscription()!.commentaireDirecteur || inscription()!.commentaireAdmin) {
-              <div class="card">
-                <div class="card-header">
-                  <h3>Commentaires de validation</h3>
+              @if (canDirecteurValidate()) {
+                <div class="d-flex flex-column align-items-end">
+                  <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i> Action requise en tant que Directeur.</p>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-danger" (click)="rejeter()">
+                      <i class="bi bi-x-circle me-2"></i> Refuser
+                    </button>
+                    <button class="btn btn-success" (click)="valider()">
+                      <i class="bi bi-check-circle me-2"></i> Valider le dossier
+                    </button>
+                  </div>
                 </div>
-                <div class="card-body">
-                  @if (inscription()!.commentaireDirecteur) {
-                    <div class="comment">
-                      <label>Directeur de thèse</label>
-                      <p>{{ inscription()!.commentaireDirecteur }}</p>
-                      <small>{{ inscription()!.dateValidationDirecteur | date:'dd/MM/yyyy HH:mm' }}</small>
-                    </div>
-                  }
-                  @if (inscription()!.commentaireAdmin) {
-                    <div class="comment">
-                      <label>Administration</label>
-                      <p>{{ inscription()!.commentaireAdmin }}</p>
-                      <small>{{ inscription()!.dateValidationAdmin | date:'dd/MM/yyyy HH:mm' }}</small>
-                    </div>
-                  }
+              } @else if (isStudentOwner() && isBrouillon()) {
+                <div class="d-flex justify-content-end gap-2">
+                  <a [routerLink]="['/inscriptions/modifier', inscription()?.id]" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil me-2"></i> Modifier
+                  </a>
+                  <button class="btn btn-primary" (click)="soumettre()">
+                    <i class="bi bi-send me-2"></i> Soumettre
+                  </button>
                 </div>
-              </div>
-            }
+              } @else {
+                <div class="text-end text-muted small">
+                  Aucune action requise pour le moment.
+                </div>
+              }
+            </div>
           </div>
-
-          <!-- Actions -->
-          @if (inscription()!.statut === 'BROUILLON') {
-            <div class="actions-bar">
-              <a [routerLink]="['/inscriptions', inscription()!.id, 'edit']" class="btn btn-outline">
-                <i class="bi bi-pencil"></i> Modifier
-              </a>
-              <button class="btn btn-primary" (click)="soumettre()">
-                <i class="bi bi-send"></i> Soumettre
-              </button>
-            </div>
-          }
         }
       </div>
     </app-main-layout>
-  `,
-  styles: [`
-    .page {
-      max-width: 900px;
-    }
-
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--text-muted);
-      margin-bottom: 1rem;
-    }
-
-    .detail-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-    }
-
-    .info-item {
-      label {
-        display: block;
-        font-size: 0.8125rem;
-        color: var(--text-muted);
-        margin-bottom: 0.25rem;
-      }
-
-      span {
-        font-weight: 500;
-      }
-    }
-
-    .comment {
-      padding: 1rem;
-      background: var(--bg-color);
-      border-radius: var(--border-radius);
-      margin-bottom: 1rem;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      label {
-        font-weight: 600;
-        display: block;
-        margin-bottom: 0.5rem;
-      }
-
-      small {
-        color: var(--text-muted);
-      }
-    }
-
-    .actions-bar {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid var(--border-color);
-    }
-
-    .loading-state {
-      display: flex;
-      justify-content: center;
-      padding: 4rem;
-    }
-  `]
+  `
 })
 export class InscriptionDetailComponent implements OnInit {
   inscription = signal<Inscription | null>(null);
   isLoading = signal(true);
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private inscriptionService: InscriptionService
+      private route: ActivatedRoute,
+      private router: Router,
+      private inscriptionService: InscriptionService,
+      private authService: AuthService
   ) {}
 
-  ngOnInit(): void {
-    const id = this.route.snapshot.params['id'];
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadInscription(+id);
     }
   }
 
-  private loadInscription(id: number): void {
-    this.inscriptionService.getById(id).subscribe({
+  private loadInscription(id: number) {
+    this.inscriptionService.getInscriptionById(id).subscribe({
       next: (data) => {
         this.inscription.set(data);
         this.isLoading.set(false);
       },
       error: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/inscriptions']);
+        this.goBack();
       }
     });
   }
 
-  soumettre(): void {
-    const id = this.inscription()?.id;
-    if (id) {
-      this.inscriptionService.soumettre(id).subscribe({
-        next: () => this.loadInscription(id)
+  // --- LOGIQUE METIER ---
+
+  isStudentOwner(): boolean {
+    const user = this.authService.currentUser();
+    return user?.id === this.inscription()?.doctorantId;
+  }
+
+  isBrouillon(): boolean {
+    return this.inscription()?.statut === StatutInscription.BROUILLON;
+  }
+
+  canDirecteurValidate(): boolean {
+    const user = this.authService.currentUser();
+    const ins = this.inscription();
+    return (
+        user?.role === Role.DIRECTEUR_THESE &&
+        user?.id === ins?.directeurId &&
+        ins?.statut === StatutInscription.SOUMIS
+    );
+  }
+
+  // --- ACTIONS ---
+
+  valider() {
+    if (confirm('Confirmer la validation ?')) {
+      this.inscriptionService.validerParDirecteur(this.inscription()!.id, "Validé").subscribe({
+        next: () => {
+          alert('Validé !');
+          this.router.navigate(['/validations']);
+        }
       });
     }
   }
 
-  getStatutClass(statut: StatutInscription): string {
-    const classes: Record<string, string> = {
-      'BROUILLON': 'badge-secondary',
-      'SOUMIS': 'badge-primary',
-      'VALIDE_DIRECTEUR': 'badge-warning',
-      'VALIDE_ADMIN': 'badge-success',
-      'REJETE_DIRECTEUR': 'badge-danger',
-      'REJETE_ADMIN': 'badge-danger'
-    };
-    return classes[statut] || 'badge-secondary';
+  rejeter() {
+    const motif = prompt("Motif :");
+    if (motif) {
+      this.inscriptionService.rejeterParDirecteur(this.inscription()!.id, motif).subscribe({
+        next: () => {
+          alert('Rejeté.');
+          this.router.navigate(['/validations']);
+        }
+      });
+    }
   }
 
-  getStatutLabel(statut: StatutInscription): string {
-    const labels: Record<string, string> = {
-      'BROUILLON': 'Brouillon',
-      'SOUMIS': 'Soumis',
-      'VALIDE_DIRECTEUR': 'Validé par le directeur',
-      'VALIDE_ADMIN': 'Validé',
-      'REJETE_DIRECTEUR': 'Rejeté par le directeur',
-      'REJETE_ADMIN': 'Rejeté'
-    };
-    return labels[statut] || statut;
+  soumettre() {
+    if (confirm('Soumettre définitivement ?')) {
+      this.inscriptionService.soumettre(this.inscription()!.id).subscribe({
+        next: (upd) => this.inscription.set(upd)
+      });
+    }
+  }
+
+  goBack() {
+    const user = this.authService.currentUser();
+    if (user?.role === Role.DIRECTEUR_THESE) {
+      this.router.navigate(['/validations']);
+    } else {
+      this.router.navigate(['/inscriptions']);
+    }
+  }
+
+  getStatusClass(statut?: string): string {
+    switch(statut) {
+      case 'SOUMIS': return 'bg-warning text-dark';
+      case 'VALIDE_DIRECTEUR': return 'bg-success';
+      case 'VALIDE_ADMIN': return 'bg-success';
+      case 'REJETE_DIRECTEUR': return 'bg-danger';
+      default: return 'bg-secondary';
+    }
   }
 }

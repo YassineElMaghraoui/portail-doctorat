@@ -34,17 +34,15 @@ public class AuthService {
     private long jwtExpiration;
 
     /**
-     * Inscription d'un nouvel utilisateur
+     * Inscription d'un nouvel utilisateur (Force CANDIDAT)
      */
     public AuthResponse register(RegisterRequest request) {
         log.info("📝 Tentative d'inscription: {}", request.getUsername());
 
-        // Vérifier si username existe déjà
+        // Vérifications
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Ce nom d'utilisateur existe déjà");
         }
-
-        // Vérifier si email existe déjà
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Cet email est déjà utilisé");
         }
@@ -56,11 +54,17 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setNom(request.getNom());
         user.setPrenom(request.getPrenom());
-        user.setRole(request.getRole() != null ? request.getRole() : Role.DOCTORANT);
+
+        // 🔴 CHANGEMENT MAJEUR : On force le rôle CANDIDAT
+        // Peu importe ce que le frontend envoie, ce sera CANDIDAT.
+        user.setRole(Role.CANDIDAT);
+
+        // On laisse enabled=true pour qu'il puisse se connecter
+        // et voir la page "En attente de validation"
         user.setEnabled(true);
 
         User savedUser = userRepository.save(user);
-        log.info("✅ Utilisateur créé: {}", savedUser.getUsername());
+        log.info("✅ Candidat inscrit: {}", savedUser.getUsername());
 
         // Générer les tokens
         UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getUsername());
@@ -71,14 +75,14 @@ public class AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .expiresIn(jwtExpiration / 1000) // En secondes
+                .expiresIn(jwtExpiration / 1000)
                 .userId(savedUser.getId())
                 .username(savedUser.getUsername())
                 .email(savedUser.getEmail())
                 .nom(savedUser.getNom())
                 .prenom(savedUser.getPrenom())
                 .role(savedUser.getRole())
-                .message("Inscription réussie")
+                .message("Inscription réussie en tant que Candidat")
                 .build();
     }
 
@@ -89,7 +93,6 @@ public class AuthService {
         log.info("🔐 Tentative de connexion: {}", request.getUsername());
 
         try {
-            // Authentifier l'utilisateur
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getUsername(),
@@ -97,17 +100,15 @@ public class AuthService {
                     )
             );
 
-            // Récupérer l'utilisateur
             User user = userRepository.findByUsername(request.getUsername())
                     .orElseGet(() -> userRepository.findByEmail(request.getUsername())
                             .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé")));
 
-            // Générer les tokens
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String accessToken = jwtService.generateToken(userDetails);
             String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-            log.info("✅ Connexion réussie: {}", user.getUsername());
+            log.info("✅ Connexion réussie: {} (Rôle: {})", user.getUsername(), user.getRole());
 
             return AuthResponse.builder()
                     .accessToken(accessToken)
@@ -124,7 +125,7 @@ public class AuthService {
                     .build();
 
         } catch (BadCredentialsException e) {
-            log.warn("❌ Échec de connexion: identifiants incorrects pour {}", request.getUsername());
+            log.warn("❌ Échec de connexion pour {}", request.getUsername());
             throw new RuntimeException("Nom d'utilisateur ou mot de passe incorrect");
         }
     }
@@ -133,12 +134,9 @@ public class AuthService {
      * Rafraîchir le token
      */
     public AuthResponse refreshToken(String refreshToken) {
-        log.info("🔄 Rafraîchissement du token");
-
         if (!jwtService.validateToken(refreshToken)) {
-            throw new RuntimeException("Refresh token invalide ou expiré");
+            throw new RuntimeException("Refresh token invalide");
         }
-
         String username = jwtService.extractUsername(refreshToken);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
@@ -158,39 +156,23 @@ public class AuthService {
                 .nom(user.getNom())
                 .prenom(user.getPrenom())
                 .role(user.getRole())
-                .message("Token rafraîchi")
                 .build();
     }
 
-    /**
-     * Changer le mot de passe
-     */
     public void changePassword(String username, ChangePasswordRequest request) {
-        log.info("🔑 Changement de mot de passe pour: {}", username);
-
-        // Vérifier que les nouveaux mots de passe correspondent
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("Les mots de passe ne correspondent pas");
         }
-
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        // Vérifier l'ancien mot de passe
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new RuntimeException("Ancien mot de passe incorrect");
         }
-
-        // Mettre à jour le mot de passe
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-
-        log.info("✅ Mot de passe changé pour: {}", username);
     }
 
-    /**
-     * Récupérer le profil de l'utilisateur connecté
-     */
     public UserDTO getCurrentUser(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));

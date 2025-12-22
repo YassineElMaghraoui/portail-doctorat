@@ -13,14 +13,6 @@ import ma.enset.inscriptionservice.enums.TypeDerogation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Entité pour gérer les dérogations de prolongation du doctorat.
- * 
- * Règles du cahier des charges :
- * - Durée normale du doctorat : 3 ans
- * - Durée maximale : 6 ans
- * - Au-delà de 3 ans, une dérogation PED est nécessaire
- */
 @Entity
 @Table(name = "derogations")
 @Data
@@ -46,6 +38,8 @@ public class Derogation {
     @Column(name = "type_derogation", nullable = false)
     private TypeDerogation typeDerogation;
 
+    // ✅ CORRECTION ICI : @Builder.Default force Lombok à garder cette valeur par défaut
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatutDerogation statut = StatutDerogation.EN_ATTENTE;
@@ -55,7 +49,7 @@ public class Derogation {
     private String motif;
 
     @Column(name = "annee_demandee")
-    private Integer anneeDemandee; // 4, 5 ou 6
+    private Integer anneeDemandee;
 
     @Column(name = "date_demande", nullable = false)
     private LocalDateTime dateDemande;
@@ -64,13 +58,13 @@ public class Derogation {
     private LocalDateTime dateDecision;
 
     @Column(name = "decide_par")
-    private Long decideParId; // ID du responsable PED/CEDoc
+    private Long decideParId;
 
     @Column(name = "commentaire_decision", length = 1000)
     private String commentaireDecision;
 
     @Column(name = "date_expiration")
-    private LocalDate dateExpiration; // Date jusqu'à laquelle la dérogation est valide
+    private LocalDate dateExpiration;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -92,9 +86,6 @@ public class Derogation {
         updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * Vérifie si la dérogation est encore valide
-     */
     public boolean estValide() {
         if (statut != StatutDerogation.APPROUVEE) {
             return false;
@@ -105,9 +96,6 @@ public class Derogation {
         return LocalDate.now().isBefore(dateExpiration) || LocalDate.now().isEqual(dateExpiration);
     }
 
-    /**
-     * Vérifie si la dérogation est en attente de décision
-     */
     public boolean estEnAttente() {
         return statut == StatutDerogation.EN_ATTENTE;
     }

@@ -33,4 +33,7 @@ public interface InscriptionService {
     Inscription rejeterParDirecteur(Long id, String commentaire);
 
     Inscription rejeterParAdmin(Long id, String commentaire);
+
+    // ✅ INDISPENSABLE POUR QUE LE CONTRÔLEUR FONCTIONNE
+    Inscription soumettreInscription(Long id);
 }

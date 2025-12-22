@@ -28,25 +28,14 @@ import { Role } from '@core/models/user.model';
               </a>
             </li>
 
-            @if (isDoctorant() || isAdmin()) {
+            <!-- SECTION DOCTORANT -->
+            @if (isDoctorant()) {
               <li>
                 <a routerLink="/inscriptions" routerLinkActive="active">
                   <i class="bi bi-file-earmark-text"></i>
                   <span>Mes inscriptions</span>
                 </a>
               </li>
-            }
-
-            @if (isDirecteur()) {
-              <li>
-                <a routerLink="/inscriptions/a-valider" routerLinkActive="active">
-                  <i class="bi bi-check-circle"></i>
-                  <span>Validations</span>
-                </a>
-              </li>
-            }
-
-            @if (isDoctorant()) {
               <li>
                 <a routerLink="/soutenances" routerLinkActive="active">
                   <i class="bi bi-award"></i>
@@ -61,6 +50,20 @@ import { Role } from '@core/models/user.model';
               </li>
             }
 
+            <!-- SECTION DIRECTEUR DE THESE -->
+            @if (isDirecteur()) {
+              <li class="nav-section">Encadrement</li>
+              <li>
+                <!-- CORRECTION ICI : Le lien doit correspondre à ton fichier app.routes.ts -->
+                <a routerLink="/validations" routerLinkActive="active">
+                  <i class="bi bi-check-circle"></i>
+                  <span>Validations</span>
+                  <span class="badge-dot"></span>
+                </a>
+              </li>
+            }
+
+            <!-- SECTION ADMIN -->
             @if (isAdmin()) {
               <li class="nav-section">Administration</li>
               <li>
@@ -70,6 +73,7 @@ import { Role } from '@core/models/user.model';
                 </a>
               </li>
               <li>
+                <!-- Assure-toi que ces routes existent bien dans admin.routes.ts -->
                 <a routerLink="/admin/inscriptions" routerLinkActive="active">
                   <i class="bi bi-file-earmark-check"></i>
                   <span>Toutes inscriptions</span>
@@ -128,6 +132,7 @@ import { Role } from '@core/models/user.model';
       position: fixed;
       height: 100vh;
       z-index: 100;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.1);
     }
 
     .sidebar-header {
@@ -146,6 +151,7 @@ import { Role } from '@core/models/user.model';
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 4px 12px rgba(118, 75, 162, 0.3);
     }
 
     .logo i {
@@ -156,12 +162,25 @@ import { Role } from '@core/models/user.model';
     .logo-text {
       font-weight: 600;
       font-size: 1.125rem;
+      letter-spacing: -0.025em;
     }
 
     .sidebar-nav {
       flex: 1;
       overflow-y: auto;
       padding: 1rem 0;
+    }
+
+    /* Scrollbar fine pour le menu */
+    .sidebar-nav::-webkit-scrollbar {
+      width: 4px;
+    }
+    .sidebar-nav::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .sidebar-nav::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
     }
 
     .nav-list {
@@ -173,7 +192,7 @@ import { Role } from '@core/models/user.model';
     .nav-section {
       padding: 1rem 1.5rem 0.5rem;
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #64748b;
@@ -186,11 +205,13 @@ import { Role } from '@core/models/user.model';
       padding: 0.75rem 1.5rem;
       color: #94a3b8;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
+      position: relative;
     }
 
     .nav-list a i {
       font-size: 1.125rem;
+      transition: transform 0.2s;
     }
 
     .nav-list a:hover {
@@ -198,10 +219,35 @@ import { Role } from '@core/models/user.model';
       color: white;
     }
 
+    .nav-list a:hover i {
+      transform: translateX(2px);
+    }
+
     .nav-list a.active {
-      background: rgba(99, 102, 241, 0.2);
-      color: white;
-      border-right: 3px solid #818cf8;
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      font-weight: 500;
+    }
+
+    .nav-list a.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: #818cf8;
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+
+    /* Badge optionnel pour notifications */
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      background: #f43f5e;
+      border-radius: 50%;
+      margin-left: auto;
     }
 
     .sidebar-footer {
@@ -210,6 +256,7 @@ import { Role } from '@core/models/user.model';
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      background: rgba(0,0,0,0.1);
     }
 
     .user-info {
@@ -221,6 +268,7 @@ import { Role } from '@core/models/user.model';
       border-radius: 8px;
       color: white;
       text-decoration: none;
+      transition: background 0.2s;
     }
 
     .user-info:hover {
@@ -235,18 +283,24 @@ import { Role } from '@core/models/user.model';
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       font-weight: 600;
+      color: white;
+      border: 2px solid rgba(255,255,255,0.1);
     }
 
     .user-details {
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .user-name {
       font-size: 0.875rem;
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .user-role {
@@ -264,15 +318,16 @@ import { Role } from '@core/models/user.model';
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s;
     }
 
     .btn-logout:hover {
-      background: rgba(239, 68, 68, 0.2);
+      background: rgba(239, 68, 68, 0.15);
       color: #f87171;
     }
 
     .btn-logout i {
-      font-size: 1.125rem;
+      font-size: 1.25rem;
     }
 
     .main-content {
@@ -281,6 +336,7 @@ import { Role } from '@core/models/user.model';
       padding: 2rem;
       background: #f8fafc;
       min-height: 100vh;
+      width: calc(100% - 260px); /* Important pour éviter le scroll horizontal */
     }
   `]
 })

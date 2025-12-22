@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
+import { Role } from '@core/models/user.model';
 
 @Component({
   selector: 'app-login',
@@ -32,12 +33,12 @@ import { AuthService } from '@core/services/auth.service';
             <div class="input-group">
               <i class="bi bi-person"></i>
               <input
-                type="text"
-                id="username"
-                class="form-control"
-                formControlName="username"
-                placeholder="Entrez votre identifiant"
-                [class.is-invalid]="isFieldInvalid('username')"
+                  type="text"
+                  id="username"
+                  class="form-control"
+                  formControlName="username"
+                  placeholder="Entrez votre identifiant"
+                  [class.is-invalid]="isFieldInvalid('username')"
               />
             </div>
             @if (isFieldInvalid('username')) {
@@ -50,12 +51,12 @@ import { AuthService } from '@core/services/auth.service';
             <div class="input-group">
               <i class="bi bi-lock"></i>
               <input
-                [type]="showPassword() ? 'text' : 'password'"
-                id="password"
-                class="form-control"
-                formControlName="password"
-                placeholder="Entrez votre mot de passe"
-                [class.is-invalid]="isFieldInvalid('password')"
+                  [type]="showPassword() ? 'text' : 'password'"
+                  id="password"
+                  class="form-control"
+                  formControlName="password"
+                  placeholder="Entrez votre mot de passe"
+                  [class.is-invalid]="isFieldInvalid('password')"
               />
               <button type="button" class="btn-toggle-password" (click)="togglePassword()">
                 <i class="bi" [class.bi-eye]="!showPassword()" [class.bi-eye-slash]="showPassword()"></i>
@@ -115,7 +116,7 @@ import { AuthService } from '@core/services/auth.service';
         align-items: center;
         justify-content: center;
         margin: 0 auto 1rem;
-        
+
         i {
           font-size: 2rem;
           color: white;
@@ -141,7 +142,7 @@ import { AuthService } from '@core/services/auth.service';
 
     .input-group {
       position: relative;
-      
+
       i:first-child {
         position: absolute;
         left: 1rem;
@@ -165,7 +166,7 @@ import { AuthService } from '@core/services/auth.service';
         color: #94a3b8;
         cursor: pointer;
         padding: 0.5rem;
-        
+
         &:hover {
           color: #64748b;
         }
@@ -184,7 +185,7 @@ import { AuthService } from '@core/services/auth.service';
       margin-top: 1.5rem;
       padding-top: 1.5rem;
       border-top: 1px solid #e2e8f0;
-      
+
       p {
         color: #64748b;
         font-size: 0.9375rem;
@@ -206,10 +207,10 @@ export class LoginComponent {
   errorMessage = signal('');
 
   constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
-    private route: ActivatedRoute
+      private fb: FormBuilder,
+      private authService: AuthService,
+      private router: Router,
+      private route: ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
       username: ['', Validators.required],
@@ -235,13 +236,30 @@ export class LoginComponent {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
+    // On s'abonne à la réponse
     this.authService.login(this.loginForm.value).subscribe({
-      next: () => {
-        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-        this.router.navigateByUrl(returnUrl);
+      next: (response) => {
+        // 🔴 ON UTILISE DIRECTEMENT LA RÉPONSE DU SERVEUR
+        console.log("✅ Réponse Login reçue :", response);
+        const roleRecu = response.role; // Le rôle brut qui vient du Backend
+
+        if (roleRecu === 'CANDIDAT') {
+          console.log("🔒 C'est un CANDIDAT -> Salle d'attente");
+          this.router.navigate(['/auth/pending-approval']);
+        }
+        else if (roleRecu === 'ADMIN') {
+          console.log("🛡️ C'est un ADMIN");
+          this.router.navigate(['/admin/users']);
+        }
+        else {
+          console.log("🎓 C'est un DOCTORANT/DIRECTEUR");
+          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+          this.router.navigateByUrl(returnUrl);
+        }
       },
       error: (error) => {
-        this.errorMessage.set(error.message || 'Erreur de connexion');
+        console.error("❌ Erreur Login:", error);
+        this.errorMessage.set(error.message || 'Identifiants incorrects');
         this.isLoading.set(false);
       }
     });

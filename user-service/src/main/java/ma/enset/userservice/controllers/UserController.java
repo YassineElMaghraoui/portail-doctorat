@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.userservice.dto.UserDTO;
 import ma.enset.userservice.entities.User;
+import ma.enset.userservice.enums.Role; // ✅ IMPORTANT : Import de l'Enum Role
 import ma.enset.userservice.mappers.UserMapper;
 import ma.enset.userservice.services.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,9 +23,7 @@ import java.util.Optional;
 public class UserController {
 
     private final UserService userService;
-
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper; // ✅ Mis en final pour l'injection par constructeur
 
     @PostMapping
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
@@ -70,6 +68,15 @@ public class UserController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    // 🔴🔴🔴 NOUVEAU ENDPOINT POUR L'ADMIN DASHBOARD 🔴🔴🔴
+    @GetMapping("/role/{role}")
+    public ResponseEntity<List<User>> getUsersByRole(@PathVariable Role role) {
+        log.info("REST request to get users by role: {}", role);
+        List<User> users = userService.getUsersByRole(role);
+        return ResponseEntity.ok(users);
+    }
+    // ---------------------------------------------------------
 
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {

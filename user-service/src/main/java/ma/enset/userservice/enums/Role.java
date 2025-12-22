@@ -1,9 +1,8 @@
 package ma.enset.userservice.enums;
 
 public enum Role {
-    DOCTORANT,
+    ADMIN,
+    DOCTORANT,       // Celui qui est accepté
     DIRECTEUR_THESE,
-    CHEF_FILIERE,
-    RESPONSABLE_CEDoc,
-    ADMIN
+    CANDIDAT         // NOUVEAU : Celui qui vient de s'inscrire
 }

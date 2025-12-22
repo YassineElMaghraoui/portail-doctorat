@@ -3,6 +3,7 @@ package ma.enset.userservice.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.userservice.entities.User;
+import ma.enset.userservice.enums.Role;
 import ma.enset.userservice.repositories.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,7 +37,12 @@ public class UserServiceImpl implements UserService {
                     existingUser.setEmail(user.getEmail());
                     existingUser.setNom(user.getNom());
                     existingUser.setPrenom(user.getPrenom());
-                    existingUser.setRole(user.getRole());
+
+                    // L'admin peut changer le rôle ici (CANDIDAT -> DOCTORANT)
+                    if(user.getRole() != null) {
+                        existingUser.setRole(user.getRole());
+                    }
+
                     existingUser.setEnabled(user.getEnabled());
 
                     if (user.getPassword() != null && !user.getPassword().isEmpty()) {
@@ -72,5 +78,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    // 🔴 AJOUTÉ : Implémentation de la recherche par rôle
+    @Override
+    public List<User> getUsersByRole(Role role) {
+        log.info("Fetching users with role: {}", role);
+        return userRepository.findByRole(role);
     }
 }

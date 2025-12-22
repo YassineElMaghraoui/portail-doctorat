@@ -4,31 +4,10 @@ export interface User {
   email: string;
   nom: string;
   prenom: string;
-  role: Role;
+  role: Role | string; // Accepte string au cas où
   enabled: boolean;
   createdAt?: string;
-}
-
-export enum Role {
-  DOCTORANT = 'DOCTORANT',
-  DIRECTEUR_THESE = 'DIRECTEUR_THESE',
-  CHEF_FILIERE = 'CHEF_FILIERE',
-  RESPONSABLE_CEDOC = 'RESPONSABLE_CEDOC',
-  ADMIN = 'ADMIN'
-}
-
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  username: string;
-  email: string;
-  password: string;
-  nom: string;
-  prenom: string;
-  role?: Role;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -41,12 +20,30 @@ export interface AuthResponse {
   email: string;
   nom: string;
   prenom: string;
-  role: Role;
+  role: string; // Le backend renvoie une string
   message: string;
 }
 
-export interface ChangePasswordRequest {
-  oldPassword: string;
-  newPassword: string;
-  confirmPassword: string;
+// 🔴 C'EST ICI QUE CA SE JOUE :
+export enum Role {
+  ADMIN = 'ADMIN',
+  DOCTORANT = 'DOCTORANT',
+  DIRECTEUR_THESE = 'DIRECTEUR_THESE',
+  CHEF_FILIERE = 'CHEF_FILIERE',
+  RESPONSABLE_CEDOC = 'RESPONSABLE_CEDOC',
+  CANDIDAT = 'CANDIDAT' // <--- VERIFIEZ QUE CETTE LIGNE EST PRÉSENTE !
+}
+
+export interface LoginRequest {
+  username?: string;
+  password?: string;
+}
+
+export interface RegisterRequest {
+  nom: string;
+  prenom: string;
+  username: string;
+  email: string;
+  password: string;
+  role?: string;
 }

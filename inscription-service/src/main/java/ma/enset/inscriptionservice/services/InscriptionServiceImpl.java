@@ -31,7 +31,7 @@ public class InscriptionServiceImpl implements InscriptionService {
     private final CampagneRepository campagneRepository;
     private final UserServiceClient userServiceClient;
     private final InscriptionEventPublisher eventPublisher;
-    private final DoctoratDureeService doctoratDureeService;  // ← AJOUTÉ
+    private final DoctoratDureeService doctoratDureeService;
 
     @Override
     public Inscription createInscription(Inscription inscription) {
@@ -41,9 +41,9 @@ public class InscriptionServiceImpl implements InscriptionService {
         if (inscription.getTypeInscription() == TypeInscription.REINSCRIPTION) {
             EligibiliteReinscriptionDTO eligibilite = doctoratDureeService
                     .verifierEligibiliteReinscription(inscription.getDoctorantId());
-            
+
             if (!eligibilite.isEligible()) {
-                log.warn("❌ Réinscription refusée pour doctorant {} : {}", 
+                log.warn("❌ Réinscription refusée pour doctorant {} : {}",
                         inscription.getDoctorantId(), eligibilite.getMessage());
                 throw new RuntimeException(eligibilite.getMessage());
             }
@@ -84,6 +84,11 @@ public class InscriptionServiceImpl implements InscriptionService {
                     existing.setLaboratoireAccueil(inscription.getLaboratoireAccueil());
                     existing.setCollaborationExterne(inscription.getCollaborationExterne());
                     existing.setDirecteurId(inscription.getDirecteurId());
+                    // On met à jour la campagne si elle a changé
+                    if (inscription.getCampagne() != null && inscription.getCampagne().getId() != null) {
+                        Campagne camp = campagneRepository.findById(inscription.getCampagne().getId()).orElse(existing.getCampagne());
+                        existing.setCampagne(camp);
+                    }
                     return inscriptionRepository.save(existing);
                 })
                 .orElseThrow(() -> new RuntimeException("Inscription non trouvée avec l'id: " + id));
@@ -118,6 +123,35 @@ public class InscriptionServiceImpl implements InscriptionService {
     @Override
     public List<Inscription> getInscriptionsByStatut(StatutInscription statut) {
         return inscriptionRepository.findByStatut(statut);
+    }
+
+    // ==========================================================
+    // 🆕 NOUVELLE MÉTHODE AJOUTÉE POUR LE BOUTON SOUMETTRE
+    // ==========================================================
+    @Override
+    public Inscription soumettreInscription(Long id) {
+        log.info("Tentative de soumission de l'inscription: {}", id);
+
+        return inscriptionRepository.findById(id)
+                .map(inscription -> {
+                    // 1. Vérifier que c'est bien un brouillon
+                    if (inscription.getStatut() != StatutInscription.BROUILLON) {
+                        throw new RuntimeException("Seule une inscription en brouillon peut être soumise.");
+                    }
+
+                    // 2. Sauvegarder l'ancien statut pour l'historique/kafka
+                    String ancienStatut = inscription.getStatut().name();
+
+                    // 3. Changer le statut
+                    inscription.setStatut(StatutInscription.SOUMIS);
+                    Inscription updated = inscriptionRepository.save(inscription);
+
+                    // 4. Publier l'événement Kafka
+                    publishStatusChangedEvent(updated, ancienStatut, "SOUMIS", "Dossier soumis par le doctorant", "Doctorant");
+
+                    return updated;
+                })
+                .orElseThrow(() -> new RuntimeException("Inscription non trouvée avec l'id: " + id));
     }
 
     @Override
@@ -230,7 +264,7 @@ public class InscriptionServiceImpl implements InscriptionService {
     private void publishInscriptionCreatedEvent(Inscription inscription) {
         try {
             UserDTO doctorant = getUserInfo(inscription.getDoctorantId());
-            UserDTO directeur = inscription.getDirecteurId() != null 
+            UserDTO directeur = inscription.getDirecteurId() != null
                     ? getUserInfo(inscription.getDirecteurId()) : null;
 
             InscriptionCreatedEvent event = InscriptionCreatedEvent.builder()

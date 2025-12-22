@@ -16,7 +16,7 @@ export interface Inscription {
   dateValidationAdmin?: string;
   createdAt: string;
   updatedAt?: string;
-  
+
   // Infos utilisateur (ajoutées par le frontend)
   doctorantNom?: string;
   directeurNom?: string;
@@ -49,9 +49,15 @@ export enum TypeInscription {
 export interface CreateInscriptionRequest {
   doctorantId: number;
   directeurId: number;
-  campagneId: number;
+
+  // MODIFICATION ICI : On remplace campagneId par un objet pour matcher le Backend
+  campagne: { id: number };
+
   sujetThese: string;
   laboratoireAccueil: string;
   collaborationExterne?: string;
   typeInscription: TypeInscription;
+
+  // AJOUT ICI : Pour accepter la liste vide envoyée par le formulaire
+  documents?: any[];
 }

@@ -135,4 +135,17 @@ public class InscriptionController {
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("Inscription Service is running!");
     }
+
+    // ✅ CETTE MÉTHODE CORRIGE L'ERREUR 404
+    @PutMapping("/{id}/soumettre")
+    public ResponseEntity<Inscription> soumettreInscription(@PathVariable Long id) {
+        log.info("REST request to submit (soumettre) inscription with id: {}", id);
+        try {
+            Inscription submitted = inscriptionService.soumettreInscription(id);
+            return ResponseEntity.ok(submitted);
+        } catch (RuntimeException e) {
+            log.error("Erreur lors de la soumission: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }
