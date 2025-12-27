@@ -53,7 +53,6 @@ export class UserService {
      * Alias pour créer un directeur (utilise createUser en interne)
      */
     createDirecteur(directeurData: any): Observable<User> {
-        // S'assurer que le rôle est bien DIRECTEUR_THESE
         const data = {
             ...directeurData,
             role: 'DIRECTEUR_THESE',
@@ -125,6 +124,7 @@ export class UserService {
 
     /**
      * Le Directeur valide une candidature → VALIDE + rôle DOCTORANT
+     * (Version simple sans sujet de thèse)
      */
     validerCandidatureDirecteur(id: number): Observable<User> {
         console.log('📤 validerCandidatureDirecteur() - ID:', id);
@@ -137,8 +137,11 @@ export class UserService {
     }
 
     /**
-     * Le Directeur valide une candidature AVEC le sujet de thèse
-     * Le sujet est stocké dans le champ sujetThese de l'utilisateur
+     * ✅ Le Directeur valide une candidature AVEC le sujet de thèse
+     * Le sujet est stocké dans le champ titreThese de l'utilisateur
+     *
+     * @param id - ID du candidat
+     * @param sujetThese - Sujet de thèse à assigner
      */
     validerCandidatureDirecteurAvecSujet(id: number, sujetThese: string): Observable<User> {
         console.log('📤 validerCandidatureDirecteurAvecSujet() - ID:', id, 'Sujet:', sujetThese);
@@ -146,7 +149,7 @@ export class UserService {
             params: { sujetThese: sujetThese }
         }).pipe(
             tap({
-                next: (res) => console.log('✅ Candidature validée avec sujet:', res),
+                next: (res) => console.log('✅ Candidature validée avec sujet de thèse:', res),
                 error: (err) => console.error('❌ Erreur validation avec sujet:', err)
             })
         );

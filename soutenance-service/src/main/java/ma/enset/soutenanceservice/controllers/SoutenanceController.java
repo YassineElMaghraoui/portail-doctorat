@@ -101,16 +101,76 @@ public class SoutenanceController {
         }
     }
 
+    // ========================================================
+    // ✅ WORKFLOW DIRECTEUR - NOUVEAUX ENDPOINTS
+    // ========================================================
+
+    /**
+     * ✅ Directeur valide les prérequis d'une soutenance
+     * Change le statut de SOUMIS → PREREQUIS_VALIDES
+     * Endpoint: PUT /api/soutenances/{id}/valider-prerequis
+     */
+    @PutMapping("/{id}/valider-prerequis")
+    public ResponseEntity<?> validerPrerequisDirecteur(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> payload) {
+        log.info("REST request to validate prerequis by directeur for soutenance: {}", id);
+        try {
+            String commentaire = (payload != null) ? payload.get("commentaire") : null;
+            Soutenance validated = soutenanceService.validerPrerequisDirecteur(id, commentaire);
+            return ResponseEntity.ok(validated);
+        } catch (RuntimeException e) {
+            log.error("Error validating prerequis: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * ✅ Directeur demande des corrections (rejet temporaire)
+     * Change le statut → REJETEE avec commentaire dans commentaire_directeur
+     * Endpoint: PUT /api/soutenances/{id}/rejeter-directeur
+     */
+    @PutMapping("/{id}/rejeter-directeur")
+    public ResponseEntity<?> rejeterParDirecteur(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> payload) {
+        log.info("REST request to reject soutenance by directeur: {}", id);
+        try {
+            String commentaire = payload.get("commentaire");
+            if (commentaire == null || commentaire.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Le commentaire est obligatoire"));
+            }
+            Soutenance rejected = soutenanceService.rejeterParDirecteur(id, commentaire.trim());
+            return ResponseEntity.ok(rejected);
+        } catch (RuntimeException e) {
+            log.error("Error rejecting by directeur: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ========================================================
+    // ANCIEN ENDPOINT (garde pour compatibilité mais renommé)
+    // ========================================================
+
+    /**
+     * @deprecated Utiliser /valider-prerequis à la place
+     * Cet endpoint vérifie automatiquement les prérequis depuis l'objet soutenance
+     */
     @PutMapping("/{id}/verifier-prerequis")
-    public ResponseEntity<Soutenance> verifierPrerequisEtSoumettre(@PathVariable Long id) {
+    public ResponseEntity<?> verifierPrerequisEtSoumettre(@PathVariable Long id) {
         log.info("REST request to verify prerequis for soutenance: {}", id);
         try {
             Soutenance verified = soutenanceService.verifierPrerequisEtSoumettre(id);
             return ResponseEntity.ok(verified);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);
+            log.error("Error verifying prerequis: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    // ========================================================
+    // ENDPOINTS EXISTANTS
+    // ========================================================
 
     @PostMapping("/{id}/jury")
     public ResponseEntity<Soutenance> ajouterMembreJury(@PathVariable Long id, @Valid @RequestBody MembreJury membreJury) {

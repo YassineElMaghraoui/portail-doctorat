@@ -38,7 +38,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
     private final UserServiceClient userServiceClient;
     private final SoutenanceEventPublisher eventPublisher;
 
-    // Dossier de stockage pour ce service
     private final Path rootLocation = Paths.get("uploads/soutenances");
 
     @Override
@@ -48,23 +47,18 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         UserDTO doctorant = null;
         UserDTO directeur = null;
 
-        // Vérifier que le doctorant et le directeur existent
         try {
             doctorant = userServiceClient.getUserById(soutenance.getDoctorantId());
             directeur = userServiceClient.getUserById(soutenance.getDirecteurId());
-
             log.info("Doctorant vérifié: {} {}", doctorant.getNom(), doctorant.getPrenom());
             log.info("Directeur vérifié: {} {}", directeur.getNom(), directeur.getPrenom());
-
         } catch (Exception e) {
             log.error("Erreur lors de la vérification des utilisateurs: {}", e.getMessage());
-            throw new RuntimeException("Impossible de vérifier les utilisateurs. Assurez-vous que le doctorant et le directeur existent.");
+            throw new RuntimeException("Impossible de vérifier les utilisateurs.");
         }
 
-        // Sauvegarde initiale
         Soutenance saved = soutenanceRepository.save(soutenance);
 
-        // ====== PUBLIER L'ÉVÉNEMENT KAFKA ======
         try {
             SoutenanceCreatedEvent event = SoutenanceCreatedEvent.builder()
                     .soutenanceId(saved.getId())
@@ -77,47 +71,36 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     .directeurTheseNom(directeur != null ? directeur.getNom() + " " + directeur.getPrenom() : null)
                     .status(saved.getStatut().name())
                     .build();
-
             eventPublisher.publishSoutenanceCreated(event);
             log.info("✅ Événement SoutenanceCreated publié pour soutenance ID: {}", saved.getId());
         } catch (Exception e) {
             log.warn("⚠️ Impossible de publier l'événement Kafka: {}", e.getMessage());
         }
-        // ====== FIN ÉVÉNEMENT KAFKA ======
 
         return saved;
     }
 
-    // ✅ NOUVELLE MÉTHODE D'IMPLÉMENTATION POUR LES FICHIERS
     @Override
     public Soutenance soumettreDemande(String titre, Long doctorantId, Long directeurId,
                                        MultipartFile manuscrit, MultipartFile rapportAntiPlagiat, MultipartFile autorisation) {
         log.info("Soumission demande soutenance pour doctorant: {}", doctorantId);
 
-        // 1. Sauvegarder les fichiers
         String manuscritPath = saveFile(manuscrit, "manuscrit");
         String rapportPath = saveFile(rapportAntiPlagiat, "anti-plagiat");
         String autorisationPath = (autorisation != null && !autorisation.isEmpty()) ? saveFile(autorisation, "autorisation") : null;
 
-        // 2. Créer l'objet Soutenance
         Soutenance soutenance = new Soutenance();
         soutenance.setTitreThese(titre);
         soutenance.setDoctorantId(doctorantId);
         soutenance.setDirecteurId(directeurId);
-
-        // Chemins des fichiers
         soutenance.setCheminManuscrit(manuscritPath);
         soutenance.setCheminRapportAntiPlagiat(rapportPath);
         soutenance.setCheminAutorisation(autorisationPath);
-
-        // Statut initial
         soutenance.setStatut(StatutSoutenance.SOUMIS);
 
-        // 3. Appeler la méthode de création standard (qui gère Kafka et OpenFeign)
         return createSoutenance(soutenance);
     }
 
-    // Helper pour sauvegarder un fichier
     private String saveFile(MultipartFile file, String prefix) {
         try {
             if (file == null || file.isEmpty()) return null;
@@ -133,7 +116,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
 
             String filename = prefix + "_" + UUID.randomUUID() + extension;
             Path destination = rootLocation.resolve(filename);
-
             Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
 
             return filename;
@@ -145,7 +127,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
     @Override
     public Soutenance updateSoutenance(Long id, Soutenance soutenance) {
         log.info("Updating soutenance with id: {}", id);
-
         return soutenanceRepository.findById(id)
                 .map(existing -> {
                     existing.setTitreThese(soutenance.getTitreThese());
@@ -197,26 +178,107 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         return soutenances;
     }
 
+    // ========================================================
+    // ✅ NOUVELLES MÉTHODES WORKFLOW DIRECTEUR
+    // ========================================================
+
+    /**
+     * ✅ Directeur valide les prérequis d'une soutenance
+     * Change le statut de SOUMIS → PREREQUIS_VALIDES
+     */
+    @Override
+    public Soutenance validerPrerequisDirecteur(Long soutenanceId, String commentaire) {
+        log.info("✅ Validation prérequis par directeur pour soutenance: {}", soutenanceId);
+
+        return soutenanceRepository.findById(soutenanceId)
+                .map(soutenance -> {
+                    // Vérifier le statut actuel
+                    if (soutenance.getStatut() != StatutSoutenance.SOUMIS) {
+                        throw new RuntimeException("Cette soutenance n'est pas en attente de validation. Statut actuel: " + soutenance.getStatut());
+                    }
+
+                    String ancienStatut = soutenance.getStatut().name();
+
+                    // Mettre à jour le statut
+                    soutenance.setStatut(StatutSoutenance.PREREQUIS_VALIDES);
+
+                    // Enregistrer le commentaire du directeur si fourni
+                    if (commentaire != null && !commentaire.trim().isEmpty()) {
+                        soutenance.setCommentaireDirecteur(commentaire.trim());
+                    }
+
+                    Soutenance updated = soutenanceRepository.save(soutenance);
+
+                    // Publier l'événement Kafka
+                    publishStatusChangedEvent(updated, ancienStatut, "PREREQUIS_VALIDES",
+                            commentaire != null ? commentaire : "Prérequis validés par le directeur");
+
+                    log.info("✅ Prérequis validés pour soutenance {} par le directeur", soutenanceId);
+
+                    return updated;
+                })
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + soutenanceId));
+    }
+
+    /**
+     * ✅ Directeur demande des corrections (rejet temporaire)
+     * Change le statut → REJETEE avec commentaire dans commentaire_directeur
+     */
+    @Override
+    public Soutenance rejeterParDirecteur(Long soutenanceId, String commentaire) {
+        log.info("❌ Rejet par directeur pour soutenance: {} - Motif: {}", soutenanceId, commentaire);
+
+        return soutenanceRepository.findById(soutenanceId)
+                .map(soutenance -> {
+                    // Vérifier le statut actuel
+                    if (soutenance.getStatut() != StatutSoutenance.SOUMIS) {
+                        throw new RuntimeException("Cette soutenance n'est pas en attente de validation. Statut actuel: " + soutenance.getStatut());
+                    }
+
+                    String ancienStatut = soutenance.getStatut().name();
+
+                    // Mettre à jour le statut
+                    soutenance.setStatut(StatutSoutenance.REJETEE);
+
+                    // ✅ Enregistrer le commentaire du directeur (corrections demandées)
+                    soutenance.setCommentaireDirecteur(commentaire);
+
+                    Soutenance updated = soutenanceRepository.save(soutenance);
+
+                    // Publier l'événement Kafka
+                    publishStatusChangedEvent(updated, ancienStatut, "REJETEE", commentaire);
+
+                    log.info("❌ Soutenance {} rejetée par le directeur. Motif: {}", soutenanceId, commentaire);
+
+                    return updated;
+                })
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + soutenanceId));
+    }
+
+    // ========================================================
+    // MÉTHODES EXISTANTES
+    // ========================================================
+
     @Override
     public Soutenance verifierPrerequisEtSoumettre(Long id) {
         log.info("Verifying prerequis for soutenance: {}", id);
 
         return soutenanceRepository.findById(id)
                 .map(soutenance -> {
-                    if (!soutenance.prerequisSontValides()) {
-                        throw new RuntimeException("Les prérequis ne sont pas remplis. Minimum requis: 2 articles Q1/Q2, 2 conférences, 200h de formation.");
+                    // ✅ CORRECTION: Vérifier si prerequisSontValides est null
+                    if (soutenance.getPrerequis() != null && !soutenance.prerequisSontValides()) {
+                        throw new RuntimeException("Les prérequis ne sont pas remplis.");
                     }
 
                     String ancienStatut = soutenance.getStatut().name();
 
-                    // Marquer les prérequis comme validés
-                    soutenance.getPrerequis().setPrerequisValides(true);
+                    if (soutenance.getPrerequis() != null) {
+                        soutenance.getPrerequis().setPrerequisValides(true);
+                    }
                     soutenance.setStatut(StatutSoutenance.PREREQUIS_VALIDES);
                     Soutenance updated = soutenanceRepository.save(soutenance);
 
-                    // ====== PUBLIER L'ÉVÉNEMENT KAFKA ======
-                    publishStatusChangedEvent(updated, ancienStatut, "PREREQUIS_VALIDES", "Prérequis validés automatiquement");
-                    // ====== FIN ÉVÉNEMENT KAFKA ======
+                    publishStatusChangedEvent(updated, ancienStatut, "PREREQUIS_VALIDES", "Prérequis validés");
 
                     return updated;
                 })
@@ -254,10 +316,8 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     soutenance.setStatut(StatutSoutenance.JURY_PROPOSE);
                     Soutenance updated = soutenanceRepository.save(soutenance);
 
-                    // ====== PUBLIER L'ÉVÉNEMENT KAFKA ======
                     publishStatusChangedEvent(updated, ancienStatut, "JURY_PROPOSE", "Jury proposé");
 
-                    // Envoyer les invitations au jury
                     try {
                         List<MembreJury> membresJury = membreJuryRepository.findBySoutenanceId(id);
                         String doctorantNom = getDoctorantNom(updated.getDoctorantId());
@@ -266,7 +326,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     } catch (Exception e) {
                         log.warn("⚠️ Impossible d'envoyer les invitations jury: {}", e.getMessage());
                     }
-                    // ====== FIN ÉVÉNEMENT KAFKA ======
 
                     return updated;
                 })
@@ -313,9 +372,7 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     soutenance.setDateAutorisation(LocalDateTime.now());
                     Soutenance updated = soutenanceRepository.save(soutenance);
 
-                    // ====== PUBLIER L'ÉVÉNEMENT KAFKA ======
                     publishStatusChangedEvent(updated, ancienStatut, "AUTORISEE", commentaire);
-                    // ====== FIN ÉVÉNEMENT KAFKA ======
 
                     return updated;
                 })
@@ -339,20 +396,16 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     soutenance.setStatut(StatutSoutenance.PLANIFIEE);
                     Soutenance updated = soutenanceRepository.save(soutenance);
 
-                    // ====== PUBLIER L'ÉVÉNEMENT KAFKA (SOUTENANCE_SCHEDULED) ======
                     try {
                         SoutenanceStatusChangedEvent event = buildStatusChangedEvent(updated, ancienStatut, "PLANIFIEE",
                                 "Soutenance planifiée le " + date + " à " + heure);
-                        // Ajouter les infos de planification
                         event.setDateSoutenance(LocalDateTime.of(date, heure));
                         event.setLieu(lieu);
-
                         eventPublisher.publishSoutenanceScheduled(event);
                         log.info("✅ Événement SoutenanceScheduled publié");
                     } catch (Exception e) {
                         log.warn("⚠️ Impossible de publier l'événement: {}", e.getMessage());
                     }
-                    // ====== FIN ÉVÉNEMENT KAFKA ======
 
                     return updated;
                 })
@@ -372,13 +425,11 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     soutenance.setStatut(StatutSoutenance.TERMINEE);
                     Soutenance updated = soutenanceRepository.save(soutenance);
 
-                    // ====== PUBLIER L'ÉVÉNEMENT KAFKA ======
                     String commentaire = "Soutenance terminée - Mention: " + mention;
                     if (felicitations) {
                         commentaire += " avec félicitations du jury";
                     }
                     publishStatusChangedEvent(updated, ancienStatut, "TERMINEE", commentaire);
-                    // ====== FIN ÉVÉNEMENT KAFKA ======
 
                     return updated;
                 })
@@ -396,16 +447,16 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     soutenance.setCommentaireAdmin(motif);
                     Soutenance updated = soutenanceRepository.save(soutenance);
 
-                    // ====== PUBLIER L'ÉVÉNEMENT KAFKA ======
                     publishStatusChangedEvent(updated, ancienStatut, "REJETEE", motif);
-                    // ====== FIN ÉVÉNEMENT KAFKA ======
 
                     return updated;
                 })
                 .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + id));
     }
 
-    // ====== MÉTHODES UTILITAIRES POUR KAFKA ======
+    // ========================================================
+    // MÉTHODES UTILITAIRES
+    // ========================================================
 
     private void publishStatusChangedEvent(Soutenance soutenance, String oldStatus, String newStatus, String commentaire) {
         try {
@@ -451,17 +502,11 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         }
     }
 
-    /**
-     * Enrichir la soutenance avec les informations des utilisateurs
-     * via OpenFeign
-     */
     private Soutenance enrichirAvecInfosUtilisateurs(Soutenance soutenance) {
         try {
-            // 1. Récupérer les infos
             UserDTO doctorant = userServiceClient.getUserById(soutenance.getDoctorantId());
             UserDTO directeur = userServiceClient.getUserById(soutenance.getDirecteurId());
 
-            // 2. ✅ LES STOCKER DANS L'OBJET (C'est ce qui manquait !)
             soutenance.setDoctorantInfo(doctorant);
             soutenance.setDirecteurInfo(directeur);
 
@@ -472,9 +517,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         } catch (Exception e) {
             log.warn("Impossible de récupérer les infos utilisateurs pour la soutenance {}: {}",
                     soutenance.getId(), e.getMessage());
-
-            // Optionnel : Mettre des objets vides pour éviter les NullPointerException au front
-            // soutenance.setDoctorantInfo(UserDTO.builder().nom("Inconnu").prenom("").build());
         }
 
         return soutenance;

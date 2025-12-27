@@ -86,7 +86,6 @@ public class AuthService {
 
         } catch (Exception e) {
             log.error("❌ Erreur lors de la sauvegarde des fichiers", e);
-            // Optionnel : On pourrait supprimer le user si les fichiers échouent
             throw new RuntimeException("Erreur lors de l'enregistrement des pièces jointes : " + e.getMessage());
         }
 
@@ -116,7 +115,6 @@ public class AuthService {
         user.setTelephone(request.getTelephone());
         user.setRole(Role.CANDIDAT);
         user.setEnabled(true);
-        // L'état est géré par @PrePersist ou écrasé par registerWithFiles
 
         User savedUser = userRepository.save(user);
 
@@ -134,7 +132,9 @@ public class AuthService {
                 .email(savedUser.getEmail())
                 .nom(savedUser.getNom())
                 .prenom(savedUser.getPrenom())
+                .telephone(savedUser.getTelephone())
                 .role(savedUser.getRole())
+                .etat(savedUser.getEtat())
                 .message("Inscription réussie")
                 .build();
     }
@@ -162,6 +162,9 @@ public class AuthService {
             String accessToken = jwtService.generateToken(userDetails);
             String refreshToken = jwtService.generateRefreshToken(userDetails);
 
+            log.info("✅ Login réussi pour: {} (Role: {})", user.getMatricule(), user.getRole());
+            log.info("   Sujet de thèse: {}", user.getTitreThese());
+
             return AuthResponse.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
@@ -172,7 +175,20 @@ public class AuthService {
                     .email(user.getEmail())
                     .nom(user.getNom())
                     .prenom(user.getPrenom())
+                    .telephone(user.getTelephone())
                     .role(user.getRole())
+                    // ✅ Workflow
+                    .etat(user.getEtat())
+                    .motifRefus(user.getMotifRefus())
+                    // ✅ Directeur assigné
+                    .directeurId(user.getDirecteurId())
+                    // ✅ NOUVEAU : Sujet de thèse
+                    .titreThese(user.getTitreThese())
+                    // ✅ Suivi doctorant
+                    .anneeThese(user.getAnneeThese())
+                    .nbPublications(user.getNbPublications())
+                    .nbConferences(user.getNbConferences())
+                    .heuresFormation(user.getHeuresFormation())
                     .message("Connexion réussie")
                     .build();
 
@@ -192,6 +208,7 @@ public class AuthService {
         User user = userRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
         UserDetails userDetails = userDetailsService.loadUserByUsername(matricule);
+
         return AuthResponse.builder()
                 .accessToken(jwtService.generateToken(userDetails))
                 .refreshToken(jwtService.generateRefreshToken(userDetails))
@@ -202,7 +219,17 @@ public class AuthService {
                 .email(user.getEmail())
                 .nom(user.getNom())
                 .prenom(user.getPrenom())
+                .telephone(user.getTelephone())
                 .role(user.getRole())
+                // ✅ Inclure tous les champs aussi pour le refresh
+                .etat(user.getEtat())
+                .motifRefus(user.getMotifRefus())
+                .directeurId(user.getDirecteurId())
+                .titreThese(user.getTitreThese())
+                .anneeThese(user.getAnneeThese())
+                .nbPublications(user.getNbPublications())
+                .nbConferences(user.getNbConferences())
+                .heuresFormation(user.getHeuresFormation())
                 .build();
     }
 
@@ -235,10 +262,17 @@ public class AuthService {
                 .email(user.getEmail())
                 .nom(user.getNom())
                 .prenom(user.getPrenom())
+                .telephone(user.getTelephone())
                 .role(user.getRole().name())
-                // ✅ AJOUTE LE MAPPING ICI
                 .etat(user.getEtat())
                 .motifRefus(user.getMotifRefus())
+                .directeurId(user.getDirecteurId())
+                // ✅ NOUVEAU : Sujet de thèse
+                .titreThese(user.getTitreThese())
+                .anneeThese(user.getAnneeThese())
+                .nbPublications(user.getNbPublications())
+                .nbConferences(user.getNbConferences())
+                .heuresFormation(user.getHeuresFormation())
                 .build();
     }
 }

@@ -28,10 +28,14 @@ public interface UserService {
 
     // Workflow Admin
     User validerCandidature(Long id);
-    User validerCandidatureAvecDirecteur(Long id, Long directeurId);  // ✅ NOUVEAU
+    User validerCandidatureAvecDirecteur(Long id, Long directeurId);
     User refuserCandidature(Long id, String motif);
 
     // Workflow Directeur
     User validerCandidatureDirecteur(Long id);
+
+    // ✅ NOUVEAU : Validation directeur AVEC sujet de thèse
+    User validerCandidatureDirecteurAvecSujet(Long id, String sujetThese);
+
     User refuserCandidatureDirecteur(Long id, String motif);
 }

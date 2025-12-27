@@ -1,53 +1,64 @@
 import { Routes } from '@angular/router';
 
 export const ADMIN_ROUTES: Routes = [
+  // 🔹 Redirection par défaut
   {
     path: '',
     redirectTo: 'dashboard',
     pathMatch: 'full'
   },
+
+  // 🔹 Dashboard Admin
   {
     path: 'dashboard',
-    loadComponent: () => import('./dashboard/admin-dashboard.component')
-        .then(m => m.AdminDashboardComponent)
+    loadComponent: () =>
+        import('./dashboard/admin-dashboard.component')
+            .then(m => m.AdminDashboardComponent)
   },
+
+  // 🔹 Gestion des utilisateurs
   {
     path: 'users',
-    loadComponent: () => import('./user-management/user-management.component')
-        .then(m => m.UserManagementComponent)
+    loadComponent: () =>
+        import('./user-management/user-management.component')
+            .then(m => m.UserManagementComponent)
   },
-  // ======================================
-  // ROUTE POUR AJOUTER UN DIRECTEUR
-  // ======================================
+
+  // 🔹 Ajouter un directeur
   {
     path: 'users/new-director',
-    loadComponent: () => import('./new-director/new-director.component')
-        .then(m => m.NewDirectorComponent)
+    loadComponent: () =>
+        import('./new-director/new-director.component')
+            .then(m => m.NewDirectorComponent)
   },
-  // ======================================
-  // ROUTES CAMPAGNES (charge les routes enfants)
-  // ======================================
+
+  // 🔹 Campagnes (routes enfants)
   {
     path: 'campagnes',
-    loadChildren: () => import('../campagnes/campagnes.routes')
-        .then(m => m.CAMPAGNES_ROUTES)
+    loadChildren: () =>
+        import('../campagnes/campagnes.routes')
+            .then(m => m.CAMPAGNES_ROUTES)
   },
+
+  // 🔹 Gestion des dérogations
   {
     path: 'derogations',
-    loadComponent: () => import('./derogation-management/derogation-management.component')
-        .then(m => m.DerogationManagementComponent)
+    loadComponent: () =>
+        import('./derogation-management/derogation-management.component')
+            .then(m => m.DerogationManagementComponent)
   },
-  // ======================================
-  // ROUTES SOUTENANCES
-  // ======================================
+
+  // 🔹 Soutenances
   {
     path: 'soutenances',
-    loadComponent: () => import('./soutenance-list/soutenance-list.component')
-        .then(m => m.SoutenanceListComponent)
+    loadComponent: () =>
+        import('./soutenance-list/soutenance-list.component')
+            .then(m => m.SoutenanceListComponent)
   },
   {
     path: 'soutenances/:id',
-    loadComponent: () => import('./soutenance-detail/soutenance-detail.component')
-        .then(m => m.SoutenanceDetailComponent)
+    loadComponent: () =>
+        import('./soutenance-detail/soutenance-detail.component')
+            .then(m => m.SoutenanceDetailComponent)
   }
 ];

@@ -21,6 +21,8 @@ export interface User {
   directeurId?: number;
 
   // ✅ Sujet de thèse (assigné par le directeur lors de l'acceptation)
+  // Le champ peut s'appeler titreThese (backend) ou sujetThese (alias frontend)
+  titreThese?: string;
   sujetThese?: string;
 
   // ✅ Champs pour le suivi
@@ -56,6 +58,10 @@ export interface AuthResponse {
   role: string;
   telephone: string;
   message: string;
+
+  // ✅ Ajout du sujet de thèse dans la réponse d'authentification
+  titreThese?: string;
+  sujetThese?: string;
 }
 
 export enum Role {

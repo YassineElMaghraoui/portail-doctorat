@@ -27,6 +27,23 @@ public class AuthResponse {
     private String nom;
     private String prenom;
     private Role role;
+    private String telephone;
+
+    // ✅ Workflow
+    private String etat;
+    private String motifRefus;
+
+    // ✅ Directeur assigné
+    private Long directeurId;
+
+    // ✅ NOUVEAU : Sujet de thèse (assigné par le directeur)
+    private String titreThese;
+
+    // ✅ Suivi doctorant
+    private Integer anneeThese;
+    private Integer nbPublications;
+    private Integer nbConferences;
+    private Integer heuresFormation;
 
     private String message;
 }

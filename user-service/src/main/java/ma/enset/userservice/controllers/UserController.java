@@ -29,7 +29,6 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        // Debug: Afficher l'utilisateur authentifié
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         log.info("🔐 POST /api/users - Authenticated user: {}", auth != null ? auth.getName() : "NONE");
         log.info("🔐 POST /api/users - Authorities: {}", auth != null ? auth.getAuthorities() : "NONE");
@@ -116,12 +115,23 @@ public class UserController {
     // ========================================================
 
     /**
-     * Le Directeur valide une candidature → Passe à VALIDE et rôle DOCTORANT
+     * Le Directeur valide une candidature
+     * - Sans sujet: valide simplement
+     * - Avec sujet (param sujetThese): valide ET stocke le sujet de thèse
      */
     @PutMapping("/{id}/validate-directeur")
-    public ResponseEntity<User> validateDirecteur(@PathVariable Long id) {
-        log.info("Request to validate candidate by directeur: {}", id);
-        return ResponseEntity.ok(userService.validerCandidatureDirecteur(id));
+    public ResponseEntity<User> validateDirecteur(
+            @PathVariable Long id,
+            @RequestParam(required = false) String sujetThese) {
+        log.info("Request to validate candidate by directeur: {} with sujet: {}", id, sujetThese);
+
+        // ✅ Si un sujet est fourni, utiliser la nouvelle méthode
+        if (sujetThese != null && !sujetThese.trim().isEmpty()) {
+            return ResponseEntity.ok(userService.validerCandidatureDirecteurAvecSujet(id, sujetThese.trim()));
+        } else {
+            // Sinon, validation simple (sans sujet)
+            return ResponseEntity.ok(userService.validerCandidatureDirecteur(id));
+        }
     }
 
     /**

@@ -12,847 +12,326 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
   standalone: true,
   imports: [CommonModule, RouterLink, MainLayoutComponent, AdminDashboardComponent],
   template: `
-    <!-- CAS 1 : C'EST UN ADMIN -->
     @if (isAdmin()) {
       <app-admin-dashboard></app-admin-dashboard>
-    }
-
-    @else {
+    } @else {
       <app-main-layout>
-        <div class="dashboard-container p-4">
+        <div class="dashboard-container">
 
-          <!-- ============================================== -->
-          <!-- HEADER AVEC MESSAGE DE BIENVENUE               -->
-          <!-- ============================================== -->
-          <header class="welcome-header mb-5">
-            <div class="welcome-content">
-              <div class="welcome-text">
-                <h1 class="fw-bold text-dark mb-2">
-                  Bonjour, {{ authService.currentUser()?.prenom }} ! 👋
-                </h1>
-                <p class="text-muted mb-0">{{ getWelcomeMessage() }}</p>
+          <!-- HERO -->
+          <div class="welcome-hero">
+            <div class="hero-content">
+              <div class="avatar-box">
+                <span class="avatar-initials">{{ getInitials() }}</span>
               </div>
-              <div class="welcome-date">
-                <div class="date-box">
-                  <i class="bi bi-calendar3"></i>
-                  <span>{{ today | date:'EEEE d MMMM yyyy' }}</span>
+              <div class="welcome-text">
+                <p class="greeting">Bienvenue,</p>
+                <h1 class="user-name">{{ authService.currentUser()?.prenom }} {{ authService.currentUser()?.nom }}</h1>
+                <div class="user-tags">
+                  <span class="tag role"><i class="bi bi-mortarboard"></i>{{ getRoleLabel() }}</span>
+                  @if (isDoctorant() && getAnneeTheseNumber()) {
+                    <span class="tag year"><i class="bi bi-calendar3"></i>{{ getAnneeTheseNumber() }}{{ getAnneeTheseSuffix() }} année</span>
+                  }
+                  <span class="tag status"><i class="bi bi-check-circle"></i>Compte actif</span>
                 </div>
               </div>
             </div>
-          </header>
+            <div class="hero-date"><i class="bi bi-calendar3"></i>{{ today | date:'EEEE d MMMM yyyy' }}</div>
+          </div>
 
-          <!-- ============================================== -->
-          <!-- SECTION DOCTORANT                              -->
-          <!-- ============================================== -->
           @if (isDoctorant()) {
+            <!-- SUJET DE THÈSE -->
+            <div class="thesis-card">
+              <div class="thesis-header">
+                <div class="thesis-icon"><i class="bi bi-journal-text"></i></div>
+                <h3>Mon Sujet de Thèse</h3>
+              </div>
+              <div class="thesis-body">
+                @if (authService.currentUser()?.sujetThese) {
+                  <p class="thesis-text">{{ authService.currentUser()?.sujetThese }}</p>
+                  <span class="thesis-meta"><i class="bi bi-person-check"></i>Assigné par votre directeur</span>
+                } @else {
+                  <div class="no-thesis">
+                    <i class="bi bi-journal-x"></i>
+                    <p>Aucun sujet de thèse assigné</p>
+                    <span>Votre directeur vous assignera un sujet lors de la validation.</span>
+                  </div>
+                }
+              </div>
+            </div>
 
-            <!-- ALERTE DURÉE (si applicable) -->
+            <!-- ALERTE DURÉE -->
             @if (getAnneeTheseNumber() >= 3) {
-              <div class="alert-banner mb-4" [class]="getAlertClass()">
-                <div class="alert-icon">
-                  <i class="bi" [class]="getAlertIcon()"></i>
-                </div>
+              <div class="alert-banner" [ngClass]="getAlertClass()">
+                <div class="alert-icon"><i class="bi" [ngClass]="getAlertIcon()"></i></div>
                 <div class="alert-content">
                   <strong>{{ getAlertTitle() }}</strong>
-                  <p class="mb-0">{{ getAlertMessage() }}</p>
+                  <p>{{ getAlertMessage() }}</p>
                 </div>
                 @if (getAnneeTheseNumber() >= 4) {
-                  <a routerLink="/derogations" class="btn btn-sm btn-light">
-                    Demander une dérogation
-                  </a>
+                  <a routerLink="/derogations" class="alert-action">Demander une dérogation</a>
                 }
               </div>
             }
 
-            <!-- STATS CARDS -->
-            <div class="row g-4 mb-5">
-              <!-- Année de Thèse -->
-              <div class="col-lg-3 col-md-6">
-                <div class="stat-card" [class]="getYearCardClass()">
-                  <div class="stat-icon">
-                    <i class="bi bi-calendar-check"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Année de thèse</span>
-                    <h2 class="stat-value">{{ getAnneeTheseNumber() }}<sup>{{ getAnneeTheseSuffix() }}</sup></h2>
-                  </div>
-                  <div class="stat-progress">
-                    <div class="progress-bar" [style.width.%]="(getAnneeTheseNumber() / 6) * 100"></div>
-                  </div>
+            <!-- STATS -->
+            <div class="stats-grid">
+              <div class="stat-card" [ngClass]="getYearCardClass()">
+                <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Année de thèse</span>
+                  <span class="stat-value">{{ getAnneeTheseNumber() }}<sup>{{ getAnneeTheseSuffix() }}</sup></span>
                 </div>
+                <div class="stat-progress"><div class="progress-fill" [style.width.%]="(getAnneeTheseNumber() / 6) * 100"></div></div>
               </div>
-
-              <!-- Publications -->
-              <div class="col-lg-3 col-md-6">
-                <div class="stat-card stat-publications">
-                  <div class="stat-icon">
-                    <i class="bi bi-journal-richtext"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Publications Q1/Q2</span>
-                    <h2 class="stat-value">{{ getPublications() }}<span class="stat-total">/2</span></h2>
-                  </div>
-                  <div class="stat-progress">
-                    <div class="progress-bar" [style.width.%]="(getPublications() / 2) * 100"></div>
-                  </div>
+              <div class="stat-card publications">
+                <div class="stat-icon"><i class="bi bi-journal-richtext"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Publications Q1/Q2</span>
+                  <span class="stat-value">{{ getPublications() }}<span class="stat-total">/2</span></span>
                 </div>
+                <div class="stat-progress"><div class="progress-fill" [style.width.%]="(getPublications() / 2) * 100"></div></div>
               </div>
-
-              <!-- Conférences -->
-              <div class="col-lg-3 col-md-6">
-                <div class="stat-card stat-conferences">
-                  <div class="stat-icon">
-                    <i class="bi bi-mic"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Conférences</span>
-                    <h2 class="stat-value">{{ getConferences() }}<span class="stat-total">/2</span></h2>
-                  </div>
-                  <div class="stat-progress">
-                    <div class="progress-bar" [style.width.%]="(getConferences() / 2) * 100"></div>
-                  </div>
+              <div class="stat-card conferences">
+                <div class="stat-icon"><i class="bi bi-mic"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Conférences</span>
+                  <span class="stat-value">{{ getConferences() }}<span class="stat-total">/2</span></span>
                 </div>
+                <div class="stat-progress"><div class="progress-fill" [style.width.%]="(getConferences() / 2) * 100"></div></div>
               </div>
-
-              <!-- Heures Formation -->
-              <div class="col-lg-3 col-md-6">
-                <div class="stat-card stat-formation">
-                  <div class="stat-icon">
-                    <i class="bi bi-mortarboard"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Heures Formation</span>
-                    <h2 class="stat-value">{{ getHeuresFormation() }}<span class="stat-total">/200h</span></h2>
-                  </div>
-                  <div class="stat-progress">
-                    <div class="progress-bar" [style.width.%]="(getHeuresFormation() / 200) * 100"></div>
-                  </div>
+              <div class="stat-card formation">
+                <div class="stat-icon"><i class="bi bi-book"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Heures Formation</span>
+                  <span class="stat-value">{{ getHeuresFormation() }}<span class="stat-total">/200h</span></span>
                 </div>
+                <div class="stat-progress"><div class="progress-fill" [style.width.%]="(getHeuresFormation() / 200) * 100"></div></div>
               </div>
             </div>
 
-            <!-- PRÉREQUIS SOUTENANCE -->
-            <div class="prerequis-section mb-5">
-              <div class="section-header">
-                <h4><i class="bi bi-list-check me-2"></i>Prérequis pour la Soutenance</h4>
-                <span class="badge" [class]="canSoutenir() ? 'bg-success' : 'bg-warning'">
-                  {{ canSoutenir() ? '✓ Éligible' : 'En cours' }}
-                </span>
-              </div>
-              <div class="prerequis-grid">
-                <div class="prerequis-item" [class.completed]="getPublications() >= 2">
-                  <div class="prerequis-check">
-                    <i class="bi" [class]="getPublications() >= 2 ? 'bi-check-circle-fill' : 'bi-circle'"></i>
-                  </div>
-                  <div class="prerequis-content">
-                    <strong>2 Publications Q1/Q2</strong>
-                    <span>{{ getPublications() }}/2 complétées</span>
-                  </div>
-                </div>
-
-                <div class="prerequis-item" [class.completed]="getConferences() >= 2">
-                  <div class="prerequis-check">
-                    <i class="bi" [class]="getConferences() >= 2 ? 'bi-check-circle-fill' : 'bi-circle'"></i>
-                  </div>
-                  <div class="prerequis-content">
-                    <strong>2 Conférences</strong>
-                    <span>{{ getConferences() }}/2 complétées</span>
-                  </div>
-                </div>
-
-                <div class="prerequis-item" [class.completed]="getHeuresFormation() >= 200">
-                  <div class="prerequis-check">
-                    <i class="bi" [class]="getHeuresFormation() >= 200 ? 'bi-check-circle-fill' : 'bi-circle'"></i>
-                  </div>
-                  <div class="prerequis-content">
-                    <strong>200 Heures de Formation</strong>
-                    <span>{{ getHeuresFormation() }}/200h complétées</span>
-                  </div>
-                </div>
-
-                <div class="prerequis-item" [class.completed]="getAnneeTheseNumber() <= 3">
-                  <div class="prerequis-check">
-                    <i class="bi" [class]="getAnneeTheseNumber() <= 3 ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill text-warning'"></i>
-                  </div>
-                  <div class="prerequis-content">
-                    <strong>Durée ≤ 3 ans</strong>
-                    <span>{{ getAnneeTheseNumber() > 3 ? 'Dérogation requise' : 'Dans les délais' }}</span>
-                  </div>
-                </div>
-              </div>
+            <!-- ACTIONS -->
+            <h4 class="section-title"><i class="bi bi-lightning-charge me-2"></i>Actions Rapides</h4>
+            <div class="actions-grid">
+              <a routerLink="/inscriptions" class="action-card blue">
+                <div class="action-icon"><i class="bi bi-folder2-open"></i></div>
+                <div class="action-content"><h5>Mes Dossiers</h5><p>Inscriptions annuelles</p></div>
+                <i class="bi bi-arrow-right"></i>
+              </a>
+              <a routerLink="/soutenances" class="action-card purple" [class.disabled]="!canSoutenir()">
+                <div class="action-icon"><i class="bi bi-award"></i></div>
+                <div class="action-content"><h5>Ma Soutenance</h5><p>{{ canSoutenir() ? 'Déposer ma demande' : 'Prérequis non atteints' }}</p></div>
+                <i class="bi bi-arrow-right"></i>
+              </a>
+              <a routerLink="/derogations" class="action-card orange">
+                <div class="action-icon"><i class="bi bi-clock-history"></i></div>
+                <div class="action-content"><h5>Dérogations</h5><p>Demander une prolongation</p></div>
+                <i class="bi bi-arrow-right"></i>
+              </a>
+              <a routerLink="/profil" class="action-card gray">
+                <div class="action-icon"><i class="bi bi-person-gear"></i></div>
+                <div class="action-content"><h5>Mon Profil</h5><p>Voir mes informations</p></div>
+                <i class="bi bi-arrow-right"></i>
+              </a>
             </div>
 
-            <!-- ACTIONS RAPIDES -->
-            <h4 class="section-title mb-4"><i class="bi bi-lightning-charge me-2"></i>Actions Rapides</h4>
-            <div class="row g-4 mb-5">
-              <div class="col-md-6 col-lg-3">
-                <a routerLink="/inscriptions" class="action-card action-blue">
-                  <div class="action-icon">
-                    <i class="bi bi-folder2-open"></i>
-                  </div>
-                  <div class="action-content">
-                    <h5>Mes Dossiers</h5>
-                    <p>Inscriptions annuelles</p>
-                  </div>
-                  <i class="bi bi-arrow-right action-arrow"></i>
-                </a>
+            <!-- PROFIL SANS BOUTON MODIFIER -->
+            <div class="profile-card">
+              <div class="profile-header">
+                <div class="profile-icon"><i class="bi bi-person-badge"></i></div>
+                <h4>Mon Profil Doctorant</h4>
               </div>
-
-              <div class="col-md-6 col-lg-3">
-                <a routerLink="/soutenances" class="action-card action-purple" [class.disabled]="!canSoutenir()">
-                  <div class="action-icon">
-                    <i class="bi bi-award"></i>
-                  </div>
-                  <div class="action-content">
-                    <h5>Ma Soutenance</h5>
-                    <p>{{ canSoutenir() ? 'Déposer ma demande' : 'Prérequis non atteints' }}</p>
-                  </div>
-                  <i class="bi bi-arrow-right action-arrow"></i>
-                </a>
-              </div>
-
-              <div class="col-md-6 col-lg-3">
-                <a routerLink="/derogations" class="action-card action-orange">
-                  <div class="action-icon">
-                    <i class="bi bi-clock-history"></i>
-                  </div>
-                  <div class="action-content">
-                    <h5>Dérogations</h5>
-                    <p>Demander une prolongation</p>
-                  </div>
-                  <i class="bi bi-arrow-right action-arrow"></i>
-                </a>
-              </div>
-
-              <div class="col-md-6 col-lg-3">
-                <a routerLink="/profil" class="action-card action-gray">
-                  <div class="action-icon">
-                    <i class="bi bi-person-gear"></i>
-                  </div>
-                  <div class="action-content">
-                    <h5>Mon Profil</h5>
-                    <p>Informations personnelles</p>
-                  </div>
-                  <i class="bi bi-arrow-right action-arrow"></i>
-                </a>
-              </div>
-            </div>
-
-            <!-- INFORMATIONS PERSONNELLES -->
-            <div class="info-card">
-              <div class="info-header">
-                <h4><i class="bi bi-person-badge me-2"></i>Mon Profil Doctorant</h4>
-                <a routerLink="/profil" class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-pencil me-1"></i>Modifier
-                </a>
-              </div>
-              <div class="info-body">
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="info-item">
-                      <span class="info-label">Nom complet</span>
-                      <span class="info-value">{{ authService.currentUser()?.nom }} {{ authService.currentUser()?.prenom }}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Matricule</span>
-                      <span class="info-value font-monospace">{{ authService.currentUser()?.username }}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Email</span>
-                      <span class="info-value">{{ authService.currentUser()?.email }}</span>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="info-item">
-                      <span class="info-label">Téléphone</span>
-                      <span class="info-value">{{ authService.currentUser()?.telephone || 'Non renseigné' }}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Statut</span>
-                      <span class="info-value">
-                        <span class="badge bg-success-subtle text-success">
-                          <i class="bi bi-patch-check-fill me-1"></i>DOCTORANT VALIDÉ
-                        </span>
-                      </span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Dossiers soumis</span>
-                      <span class="info-value">{{ stats().inscriptions }} inscription(s)</span>
-                    </div>
-                  </div>
+              <div class="profile-body">
+                <div class="profile-grid">
+                  <div class="profile-item"><span class="item-label">Nom complet</span><span class="item-value">{{ authService.currentUser()?.nom }} {{ authService.currentUser()?.prenom }}</span></div>
+                  <div class="profile-item"><span class="item-label">Matricule</span><span class="item-value mono">{{ authService.currentUser()?.username }}</span></div>
+                  <div class="profile-item"><span class="item-label">Email</span><span class="item-value">{{ authService.currentUser()?.email }}</span></div>
+                  <div class="profile-item"><span class="item-label">Téléphone</span><span class="item-value">{{ authService.currentUser()?.telephone || 'Non renseigné' }}</span></div>
+                  <div class="profile-item"><span class="item-label">Statut</span><span class="item-value"><span class="status-tag success"><i class="bi bi-patch-check-fill"></i>DOCTORANT VALIDÉ</span></span></div>
+                  <div class="profile-item"><span class="item-label">Dossiers soumis</span><span class="item-value">{{ stats().inscriptions }} inscription(s)</span></div>
                 </div>
               </div>
             </div>
           }
 
-          <!-- ============================================== -->
-          <!-- SECTION DIRECTEUR                              -->
-          <!-- ============================================== -->
           @if (isDirecteur()) {
-            <!-- STATS DIRECTEUR -->
-            <div class="row g-4 mb-5">
-              <div class="col-md-4">
-                <div class="stat-card stat-warning">
-                  <div class="stat-icon">
-                    <i class="bi bi-hourglass-split"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Dossiers à valider</span>
-                    <h2 class="stat-value">{{ stats().aValider }}</h2>
-                  </div>
-                </div>
+            <div class="stats-grid">
+              <div class="stat-card warning">
+                <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                <div class="stat-info"><span class="stat-label">Dossiers à valider</span><span class="stat-value">{{ stats().aValider }}</span></div>
               </div>
             </div>
-
-            <!-- ACTIONS DIRECTEUR -->
-            <h4 class="section-title mb-4"><i class="bi bi-lightning-charge me-2"></i>Actions Rapides</h4>
-            <div class="row g-4">
-              <div class="col-md-6 col-lg-4">
-                <a routerLink="/validations" class="action-card action-green">
-                  <div class="action-icon">
-                    <i class="bi bi-check2-circle"></i>
-                  </div>
-                  <div class="action-content">
-                    <h5>Valider Inscriptions</h5>
-                    <p>Examiner les dossiers en attente</p>
-                  </div>
-                  <i class="bi bi-arrow-right action-arrow"></i>
-                </a>
-              </div>
-
-              <div class="col-md-6 col-lg-4">
-                <a routerLink="/director/soutenances" class="action-card action-purple">
-                  <div class="action-icon">
-                    <i class="bi bi-mortarboard"></i>
-                  </div>
-                  <div class="action-content">
-                    <h5>Soutenances</h5>
-                    <p>Gérer les demandes de soutenance</p>
-                  </div>
-                  <i class="bi bi-arrow-right action-arrow"></i>
-                </a>
-              </div>
+            <h4 class="section-title"><i class="bi bi-lightning-charge me-2"></i>Actions Rapides</h4>
+            <div class="actions-grid">
+              <a routerLink="/validations" class="action-card green">
+                <div class="action-icon"><i class="bi bi-check2-circle"></i></div>
+                <div class="action-content"><h5>Valider Inscriptions</h5><p>Examiner les dossiers</p></div>
+                <i class="bi bi-arrow-right"></i>
+              </a>
+              <a routerLink="/director/soutenances" class="action-card purple">
+                <div class="action-icon"><i class="bi bi-mortarboard"></i></div>
+                <div class="action-content"><h5>Soutenances</h5><p>Gérer les demandes</p></div>
+                <i class="bi bi-arrow-right"></i>
+              </a>
             </div>
           }
-
         </div>
       </app-main-layout>
     }
   `,
   styles: [`
-    .dashboard-container {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    /* WELCOME HEADER */
-    .welcome-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 20px;
-      padding: 2rem;
-      color: white;
-    }
-
-    .welcome-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .welcome-text h1 {
-      color: white;
-      font-size: 1.75rem;
-    }
-
-    .welcome-text p {
-      color: rgba(255,255,255,0.8);
-      font-size: 1rem;
-    }
-
-    .date-box {
-      background: rgba(255,255,255,0.15);
-      padding: 0.75rem 1.25rem;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 500;
-    }
-
-    /* ALERT BANNER */
-    .alert-banner {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
-      background: #fef3c7;
-      border: 1px solid #fcd34d;
-    }
-
-    .alert-banner.alert-warning {
-      background: #fef3c7;
-      border-color: #fcd34d;
-    }
-
-    .alert-banner.alert-danger {
-      background: #fee2e2;
-      border-color: #fca5a5;
-    }
-
-    .alert-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      background: rgba(0,0,0,0.1);
-    }
-
-    .alert-content {
-      flex: 1;
-    }
-
-    .alert-content p {
-      font-size: 0.875rem;
-      opacity: 0.8;
-    }
-
-    /* STAT CARDS */
-    .stat-card {
-      background: white;
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      border: 1px solid #e2e8f0;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card .stat-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .stat-card .stat-label {
-      font-size: 0.8rem;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 600;
-    }
-
-    .stat-card .stat-value {
-      font-size: 2.5rem;
-      font-weight: 800;
-      margin: 0;
-      line-height: 1;
-    }
-
-    .stat-card .stat-value sup {
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .stat-card .stat-total {
-      font-size: 1rem;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-
-    .stat-card .stat-progress {
-      height: 4px;
-      background: #e2e8f0;
-      border-radius: 2px;
-      margin-top: 1rem;
-      overflow: hidden;
-    }
-
-    .stat-card .stat-progress .progress-bar {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.5s ease;
-    }
-
-    /* Stat Card Colors */
-    .stat-card.stat-year-green .stat-icon { background: #dcfce7; color: #16a34a; }
-    .stat-card.stat-year-green .stat-value { color: #16a34a; }
-    .stat-card.stat-year-green .progress-bar { background: #16a34a; }
-
-    .stat-card.stat-year-yellow .stat-icon { background: #fef3c7; color: #d97706; }
-    .stat-card.stat-year-yellow .stat-value { color: #d97706; }
-    .stat-card.stat-year-yellow .progress-bar { background: #d97706; }
-
-    .stat-card.stat-year-orange .stat-icon { background: #ffedd5; color: #ea580c; }
-    .stat-card.stat-year-orange .stat-value { color: #ea580c; }
-    .stat-card.stat-year-orange .progress-bar { background: #ea580c; }
-
-    .stat-card.stat-year-red .stat-icon { background: #fee2e2; color: #dc2626; }
-    .stat-card.stat-year-red .stat-value { color: #dc2626; }
-    .stat-card.stat-year-red .progress-bar { background: #dc2626; }
-
-    .stat-card.stat-publications .stat-icon { background: #dbeafe; color: #2563eb; }
-    .stat-card.stat-publications .stat-value { color: #2563eb; }
-    .stat-card.stat-publications .progress-bar { background: #2563eb; }
-
-    .stat-card.stat-conferences .stat-icon { background: #f3e8ff; color: #9333ea; }
-    .stat-card.stat-conferences .stat-value { color: #9333ea; }
-    .stat-card.stat-conferences .progress-bar { background: #9333ea; }
-
-    .stat-card.stat-formation .stat-icon { background: #fce7f3; color: #db2777; }
-    .stat-card.stat-formation .stat-value { color: #db2777; }
-    .stat-card.stat-formation .progress-bar { background: #db2777; }
-
-    .stat-card.stat-warning .stat-icon { background: #fef3c7; color: #d97706; }
-    .stat-card.stat-warning .stat-value { color: #d97706; }
-
-    /* PREREQUIS SECTION */
-    .prerequis-section {
-      background: white;
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      border: 1px solid #e2e8f0;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid #f1f5f9;
-    }
-
-    .section-header h4 {
-      margin: 0;
-      font-weight: 700;
-      color: #1e293b;
-    }
-
-    .prerequis-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-    }
-
-    .prerequis-item {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem;
-      background: #f8fafc;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      transition: all 0.2s;
-    }
-
-    .prerequis-item.completed {
-      background: #f0fdf4;
-      border-color: #bbf7d0;
-    }
-
-    .prerequis-check i {
-      font-size: 1.5rem;
-      color: #cbd5e1;
-    }
-
-    .prerequis-item.completed .prerequis-check i {
-      color: #22c55e;
-    }
-
-    .prerequis-content strong {
-      display: block;
-      font-size: 0.9rem;
-      color: #1e293b;
-    }
-
-    .prerequis-content span {
-      font-size: 0.8rem;
-      color: #64748b;
-    }
-
-    /* SECTION TITLE */
-    .section-title {
-      font-weight: 700;
-      color: #1e293b;
-      display: flex;
-      align-items: center;
-    }
-
-    /* ACTION CARDS */
-    .action-card {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1.25rem;
-      background: white;
-      border-radius: 16px;
-      text-decoration: none;
-      color: inherit;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-      border: 1px solid #e2e8f0;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .action-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
-    }
-
-    .action-card.disabled {
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    .action-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-      flex-shrink: 0;
-    }
-
-    .action-content {
-      flex: 1;
-    }
-
-    .action-content h5 {
-      margin: 0 0 0.25rem 0;
-      font-weight: 700;
-      font-size: 1rem;
-      color: #1e293b;
-    }
-
-    .action-content p {
-      margin: 0;
-      font-size: 0.8rem;
-      color: #64748b;
-    }
-
-    .action-arrow {
-      color: #cbd5e1;
-      font-size: 1.25rem;
-      transition: transform 0.2s;
-    }
-
-    .action-card:hover .action-arrow {
-      transform: translateX(4px);
-      color: #667eea;
-    }
-
-    /* Action Card Colors */
-    .action-card.action-blue .action-icon { background: #dbeafe; color: #2563eb; }
-    .action-card.action-purple .action-icon { background: #f3e8ff; color: #9333ea; }
-    .action-card.action-orange .action-icon { background: #ffedd5; color: #ea580c; }
-    .action-card.action-green .action-icon { background: #dcfce7; color: #16a34a; }
-    .action-card.action-gray .action-icon { background: #f1f5f9; color: #64748b; }
-
-    /* INFO CARD */
-    .info-card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      border: 1px solid #e2e8f0;
-      overflow: hidden;
-    }
-
-    .info-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.25rem 1.5rem;
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .info-header h4 {
-      margin: 0;
-      font-weight: 700;
-      color: #1e293b;
-    }
-
-    .info-body {
-      padding: 1.5rem;
-    }
-
-    .info-item {
-      margin-bottom: 1rem;
-    }
-
-    .info-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .info-label {
-      display: block;
-      font-size: 0.75rem;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 0.25rem;
-    }
-
-    .info-value {
-      font-size: 1rem;
-      color: #1e293b;
-      font-weight: 500;
-    }
-
-    /* RESPONSIVE */
-    @media (max-width: 768px) {
-      .welcome-content {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .stat-card .stat-value {
-        font-size: 2rem;
-      }
-    }
+    .dashboard-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+    .welcome-hero { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; }
+    .hero-content { display: flex; align-items: center; gap: 1.5rem; z-index: 2; }
+    .avatar-box { width: 80px; height: 80px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 20px; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.3); }
+    .avatar-initials { font-size: 1.75rem; font-weight: 700; color: white; }
+    .welcome-text { color: white; }
+    .greeting { margin: 0; font-size: 0.95rem; opacity: 0.9; }
+    .user-name { margin: 0.25rem 0 0.75rem; font-size: 1.75rem; font-weight: 800; color: white; }
+    .user-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tag { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.75rem; background: rgba(255,255,255,0.15); border-radius: 50px; font-size: 0.8rem; font-weight: 500; color: white; }
+    .tag.status { background: rgba(34,197,94,0.3); }
+    .hero-date { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.15); border-radius: 12px; color: white; font-weight: 500; z-index: 2; }
+    .thesis-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 1.5rem; }
+    .thesis-header { display: flex; align-items: center; gap: 0.75rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-bottom: 1px solid #e2e8f0; }
+    .thesis-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem; }
+    .thesis-header h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+    .thesis-body { padding: 1.5rem; }
+    .thesis-text { font-size: 1.1rem; font-weight: 600; color: #1e293b; line-height: 1.5; margin: 0 0 1rem; padding: 1rem; background: linear-gradient(135deg, #f0f4ff, #ede9fe); border-radius: 12px; border-left: 4px solid #8b5cf6; }
+    .thesis-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #64748b; }
+    .thesis-meta i { color: #22c55e; }
+    .no-thesis { text-align: center; padding: 2rem; color: #64748b; }
+    .no-thesis i { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 0.75rem; }
+    .no-thesis p { margin: 0; font-weight: 600; color: #475569; }
+    .no-thesis span { font-size: 0.85rem; }
+    .alert-banner { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; }
+    .alert-banner.warning { background: #fef3c7; border: 1px solid #fcd34d; }
+    .alert-banner.danger { background: #fee2e2; border: 1px solid #fca5a5; }
+    .alert-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: rgba(0,0,0,0.1); }
+    .alert-content { flex: 1; }
+    .alert-content strong { display: block; margin-bottom: 0.25rem; }
+    .alert-content p { margin: 0; font-size: 0.875rem; opacity: 0.8; }
+    .alert-action { padding: 0.5rem 1rem; background: white; border-radius: 8px; font-weight: 600; font-size: 0.85rem; text-decoration: none; color: inherit; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: white; border-radius: 16px; padding: 1.25rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .stat-card .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem; }
+    .stat-card .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .stat-card .stat-value sup { font-size: 0.8rem; font-weight: 600; }
+    .stat-card .stat-total { font-size: 0.9rem; color: #94a3b8; font-weight: 500; }
+    .stat-card .stat-progress { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 1rem; overflow: hidden; }
+    .stat-card .progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+    .stat-card.year-green .stat-icon { background: #dcfce7; color: #16a34a; } .stat-card.year-green .stat-value { color: #16a34a; } .stat-card.year-green .progress-fill { background: #16a34a; }
+    .stat-card.year-yellow .stat-icon { background: #fef3c7; color: #d97706; } .stat-card.year-yellow .stat-value { color: #d97706; } .stat-card.year-yellow .progress-fill { background: #d97706; }
+    .stat-card.year-orange .stat-icon { background: #ffedd5; color: #ea580c; } .stat-card.year-orange .stat-value { color: #ea580c; } .stat-card.year-orange .progress-fill { background: #ea580c; }
+    .stat-card.year-red .stat-icon { background: #fee2e2; color: #dc2626; } .stat-card.year-red .stat-value { color: #dc2626; } .stat-card.year-red .progress-fill { background: #dc2626; }
+    .stat-card.publications .stat-icon { background: #dbeafe; color: #2563eb; } .stat-card.publications .stat-value { color: #2563eb; } .stat-card.publications .progress-fill { background: #2563eb; }
+    .stat-card.conferences .stat-icon { background: #f3e8ff; color: #9333ea; } .stat-card.conferences .stat-value { color: #9333ea; } .stat-card.conferences .progress-fill { background: #9333ea; }
+    .stat-card.formation .stat-icon { background: #fce7f3; color: #db2777; } .stat-card.formation .stat-value { color: #db2777; } .stat-card.formation .progress-fill { background: #db2777; }
+    .stat-card.warning .stat-icon { background: #fef3c7; color: #d97706; } .stat-card.warning .stat-value { color: #d97706; }
+    .section-title { font-weight: 700; color: #1e293b; display: flex; align-items: center; margin-bottom: 1rem; }
+    .section-title i { color: #6366f1; }
+    .actions-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .action-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: white; border-radius: 16px; text-decoration: none; color: inherit; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: all 0.3s; }
+    .action-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+    .action-card.disabled { opacity: 0.6; pointer-events: none; }
+    .action-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
+    .action-content { flex: 1; }
+    .action-content h5 { margin: 0 0 0.25rem; font-weight: 700; font-size: 1rem; color: #1e293b; }
+    .action-content p { margin: 0; font-size: 0.8rem; color: #64748b; }
+    .action-card > .bi-arrow-right { color: #cbd5e1; font-size: 1.25rem; }
+    .action-card:hover > .bi-arrow-right { color: #6366f1; transform: translateX(4px); }
+    .action-card.blue .action-icon { background: #dbeafe; color: #2563eb; }
+    .action-card.purple .action-icon { background: #f3e8ff; color: #9333ea; }
+    .action-card.orange .action-icon { background: #ffedd5; color: #ea580c; }
+    .action-card.green .action-icon { background: #dcfce7; color: #16a34a; }
+    .action-card.gray .action-icon { background: #f1f5f9; color: #64748b; }
+    .profile-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; }
+    .profile-header { display: flex; align-items: center; gap: 0.75rem; padding: 1.25rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+    .profile-icon { width: 40px; height: 40px; background: #dbeafe; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #2563eb; font-size: 1.1rem; }
+    .profile-header h4 { margin: 0; font-weight: 700; color: #1e293b; }
+    .profile-body { padding: 1.5rem; }
+    .profile-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .profile-item { padding: 0.75rem; background: #f8fafc; border-radius: 10px; }
+    .item-label { display: block; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem; }
+    .item-value { font-size: 0.95rem; font-weight: 600; color: #1e293b; }
+    .item-value.mono { font-family: monospace; }
+    .status-tag { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+    .status-tag.success { background: #dcfce7; color: #15803d; }
+    @media (max-width: 992px) { .stats-grid, .actions-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px) { .welcome-hero { flex-direction: column; text-align: center; gap: 1.5rem; } .hero-content { flex-direction: column; } .stats-grid, .actions-grid { grid-template-columns: 1fr; } .profile-grid { grid-template-columns: 1fr; } }
   `]
 })
 export class DashboardComponent implements OnInit {
   stats = signal({ inscriptions: 0, aValider: 0 });
   today = new Date();
 
-  constructor(
-      public authService: AuthService,
-      private inscriptionService: InscriptionService,
-      private router: Router
-  ) {}
+  constructor(public authService: AuthService, private inscriptionService: InscriptionService, private router: Router) {}
 
-  ngOnInit(): void {
-    this.loadData();
-  }
+  ngOnInit(): void { this.loadData(); }
 
   isDoctorant(): boolean { return this.authService.currentUser()?.role === Role.DOCTORANT; }
   isDirecteur(): boolean { return this.authService.currentUser()?.role === Role.DIRECTEUR_THESE; }
   isAdmin(): boolean { return this.authService.currentUser()?.role === Role.ADMIN; }
 
-  getWelcomeMessage(): string {
-    if (this.isDoctorant()) {
-      return 'Bienvenue dans votre espace doctorant. Suivez votre progression et gérez vos dossiers.';
-    }
-    if (this.isDirecteur()) {
-      return 'Bienvenue dans votre espace encadrement. Gérez les dossiers de vos doctorants.';
-    }
-    return 'Bienvenue sur le Portail Doctorat.';
+  getInitials(): string {
+    const user = this.authService.currentUser();
+    return user ? (user.prenom?.charAt(0) || '') + (user.nom?.charAt(0) || '') : '?';
   }
 
-  // ============================================
-  // MÉTHODES POUR LES STATS DOCTORANT
-  // ============================================
-
-  getAnneeTheseNumber(): number {
-    return this.authService.currentUser()?.anneeThese || 1;
+  getRoleLabel(): string {
+    const role = this.authService.currentUser()?.role;
+    if (role === Role.DOCTORANT) return 'Doctorant';
+    if (role === Role.DIRECTEUR_THESE) return 'Directeur de Thèse';
+    return 'Utilisateur';
   }
 
-  getAnneeTheseSuffix(): string {
-    const annee = this.getAnneeTheseNumber();
-    if (annee === 1) return 'ère';
-    return 'ème';
-  }
-
-  getPublications(): number {
-    return this.authService.currentUser()?.nbPublications || 0;
-  }
-
-  getConferences(): number {
-    return this.authService.currentUser()?.nbConferences || 0;
-  }
-
-  getHeuresFormation(): number {
-    return this.authService.currentUser()?.heuresFormation || 0;
-  }
-
-  canSoutenir(): boolean {
-    return this.getPublications() >= 2 &&
-        this.getConferences() >= 2 &&
-        this.getHeuresFormation() >= 200;
-  }
-
-  // ============================================
-  // MÉTHODES POUR LES COULEURS SELON L'ANNÉE
-  // ============================================
+  getAnneeTheseNumber(): number { return this.authService.currentUser()?.anneeThese || 1; }
+  getAnneeTheseSuffix(): string { return this.getAnneeTheseNumber() === 1 ? 'ère' : 'ème'; }
+  getPublications(): number { return this.authService.currentUser()?.nbPublications || 0; }
+  getConferences(): number { return this.authService.currentUser()?.nbConferences || 0; }
+  getHeuresFormation(): number { return this.authService.currentUser()?.heuresFormation || 0; }
+  canSoutenir(): boolean { return this.getPublications() >= 2 && this.getConferences() >= 2 && this.getHeuresFormation() >= 200; }
 
   getYearCardClass(): string {
-    const annee = this.getAnneeTheseNumber();
-    if (annee <= 2) return 'stat-year-green';
-    if (annee === 3) return 'stat-year-yellow';
-    if (annee <= 5) return 'stat-year-orange';
-    return 'stat-year-red';
+    const a = this.getAnneeTheseNumber();
+    if (a <= 2) return 'year-green';
+    if (a === 3) return 'year-yellow';
+    if (a <= 5) return 'year-orange';
+    return 'year-red';
   }
 
-  getAlertClass(): string {
-    const annee = this.getAnneeTheseNumber();
-    if (annee === 3) return 'alert-warning';
-    if (annee >= 4) return 'alert-danger';
-    return '';
-  }
-
-  getAlertIcon(): string {
-    const annee = this.getAnneeTheseNumber();
-    if (annee >= 5) return 'bi-exclamation-triangle-fill';
-    return 'bi-info-circle-fill';
-  }
-
+  getAlertClass(): string { return this.getAnneeTheseNumber() >= 4 ? 'danger' : 'warning'; }
+  getAlertIcon(): string { return this.getAnneeTheseNumber() >= 5 ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'; }
   getAlertTitle(): string {
-    const annee = this.getAnneeTheseNumber();
-    if (annee === 3) return 'Attention : 3ème année de thèse';
-    if (annee === 4) return 'Dérogation requise : 4ème année';
-    if (annee === 5) return '⚠️ Attention : 5ème année de thèse';
-    if (annee === 6) return '🚨 Dernière année possible !';
+    const a = this.getAnneeTheseNumber();
+    if (a === 3) return 'Attention : 3ème année de thèse';
+    if (a === 4) return 'Dérogation requise : 4ème année';
+    if (a === 5) return '⚠️ 5ème année de thèse';
+    if (a === 6) return '🚨 Dernière année possible !';
     return '';
   }
-
   getAlertMessage(): string {
-    const annee = this.getAnneeTheseNumber();
-    if (annee === 3) return 'La durée normale de thèse est de 3 ans. Pensez à planifier votre soutenance.';
-    if (annee === 4) return 'Vous devez demander une dérogation pour continuer votre thèse au-delà de 3 ans.';
-    if (annee === 5) return 'Il vous reste 2 ans maximum. Planifiez votre soutenance dès que possible.';
-    if (annee === 6) return 'C\'est votre dernière année. Vous devez absolument soutenir cette année.';
+    const a = this.getAnneeTheseNumber();
+    if (a === 3) return 'La durée normale est de 3 ans. Pensez à planifier votre soutenance.';
+    if (a === 4) return 'Une dérogation est requise pour continuer au-delà de 3 ans.';
+    if (a === 5) return 'Il vous reste 2 ans maximum. Planifiez votre soutenance.';
+    if (a === 6) return 'Dernière année. Vous devez soutenir cette année.';
     return '';
   }
-
-  // ============================================
-  // CHARGEMENT DES DONNÉES
-  // ============================================
 
   private loadData(): void {
     const user = this.authService.currentUser();
     if (!user) return;
-
     if (this.isDoctorant()) {
       this.inscriptionService.getByDoctorant(user.id).subscribe({
-        next: (data) => {
-          this.stats.update(s => ({ ...s, inscriptions: data.length }));
-        },
-        error: (err) => console.error('Erreur chargement inscriptions:', err)
+        next: (data) => this.stats.update(s => ({ ...s, inscriptions: data.length })),
+        error: (err) => console.error('Erreur:', err)
       });
-    }
-    else if (this.isDirecteur()) {
+    } else if (this.isDirecteur()) {
       this.inscriptionService.getInscriptionsByDirecteur(user.id).subscribe({
-        next: (data) => {
-          const count = data.filter((i: any) => i.statut === 'SOUMIS').length;
-          this.stats.update(s => ({ ...s, aValider: count }));
-        },
-        error: (err) => console.error('Erreur chargement validations:', err)
+        next: (data) => this.stats.update(s => ({ ...s, aValider: data.filter((i: any) => i.statut === 'SOUMIS').length })),
+        error: (err) => console.error('Erreur:', err)
       });
     }
   }

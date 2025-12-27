@@ -105,24 +105,24 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                                         <div class="card-content">
                                             <div class="candidate-name">{{ user.nom }} {{ user.prenom }}</div>
                                             <div class="candidate-info">
-                        <span class="info-item">
-                          <i class="bi bi-envelope"></i>
-                            {{ user.email }}
-                        </span>
                                                 <span class="info-item">
-                          <i class="bi bi-phone"></i>
+                                                    <i class="bi bi-envelope"></i>
+                                                    {{ user.email }}
+                                                </span>
+                                                <span class="info-item">
+                                                    <i class="bi bi-phone"></i>
                                                     {{ user.telephone || 'Non renseigné' }}
-                        </span>
+                                                </span>
                                             </div>
                                             <div class="candidate-meta">
-                        <span class="meta-badge matricule">
-                          <i class="bi bi-hash"></i>
-                            {{ user.username }}
-                        </span>
+                                                <span class="meta-badge matricule">
+                                                    <i class="bi bi-hash"></i>
+                                                    {{ user.username }}
+                                                </span>
                                                 <span class="meta-badge status">
-                          <i class="bi bi-clock-history"></i>
-                          En attente de votre avis
-                        </span>
+                                                    <i class="bi bi-clock-history"></i>
+                                                    En attente de votre avis
+                                                </span>
                                             </div>
                                         </div>
 
@@ -203,20 +203,30 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                                                         </div>
                                                         <p class="decision-hint">
                                                             <i class="bi bi-info-circle"></i>
-                                                            En acceptant, le candidat deviendra officiellement doctorant sous votre direction.
+                                                            En acceptant, vous devrez définir le sujet de thèse du candidat.
                                                         </p>
                                                     } @else if (showAcceptInputId() === user.id) {
+                                                        <!-- ✅ FORMULAIRE D'ACCEPTATION AVEC SUJET -->
                                                         <div class="accept-form">
                                                             <label class="accept-label">
                                                                 <i class="bi bi-journal-text"></i>
-                                                                Sujet / Titre de la thèse *
+                                                                Sujet / Titre de la thèse <span class="required">*</span>
                                                             </label>
                                                             <textarea
                                                                     class="accept-textarea"
-                                                                    rows="3"
+                                                                    rows="4"
                                                                     [(ngModel)]="sujetTheseText"
-                                                                    placeholder="Entrez le sujet de thèse du doctorant (obligatoire)...">
-                              </textarea>
+                                                                    placeholder="Entrez le sujet de thèse complet du doctorant...&#10;&#10;Ex: Étude et développement d'une architecture microservices pour les systèmes de gestion académique">
+                                                            </textarea>
+                                                            <div class="char-count" [class.warning]="sujetTheseText.length < 20">
+                                                                {{ sujetTheseText.length }} caractères (minimum 20 recommandé)
+                                                            </div>
+
+                                                            <div class="info-box">
+                                                                <i class="bi bi-lightbulb"></i>
+                                                                <span>Ce sujet sera enregistré dans le profil du doctorant et utilisé pour sa future soutenance.</span>
+                                                            </div>
+
                                                             <div class="accept-actions">
                                                                 <button class="btn-cancel" (click)="cancelAccept($event)">
                                                                     <i class="bi bi-arrow-left"></i>
@@ -224,14 +234,20 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                                                                 </button>
                                                                 <button
                                                                         class="btn-confirm-accept"
-                                                                        [disabled]="!sujetTheseText.trim()"
+                                                                        [disabled]="!sujetTheseText.trim() || sujetTheseText.trim().length < 10 || isValidating()"
                                                                         (click)="confirmerAccept(user, $event)">
-                                                                    <i class="bi bi-check-circle"></i>
-                                                                    Confirmer l'inscription
+                                                                    @if (isValidating()) {
+                                                                        <span class="spinner-sm"></span>
+                                                                        Validation...
+                                                                    } @else {
+                                                                        <i class="bi bi-check-circle"></i>
+                                                                        Confirmer l'inscription
+                                                                    }
                                                                 </button>
                                                             </div>
                                                         </div>
                                                     } @else {
+                                                        <!-- Formulaire de refus -->
                                                         <div class="refusal-form">
                                                             <label class="refusal-label">
                                                                 <i class="bi bi-chat-left-text"></i>
@@ -242,7 +258,7 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                                                                     rows="3"
                                                                     [(ngModel)]="motifText"
                                                                     placeholder="Expliquez la raison du refus (obligatoire)...">
-                              </textarea>
+                                                            </textarea>
                                                             <div class="refusal-actions">
                                                                 <button class="btn-cancel" (click)="cancelRefusal($event)">
                                                                     <i class="bi bi-arrow-left"></i>
@@ -272,709 +288,136 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
         </app-main-layout>
     `,
     styles: [`
-      .page-container {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0 1.5rem 3rem;
-      }
+      .page-container { max-width: 1000px; margin: 0 auto; padding: 0 1.5rem 3rem; }
 
       /* Hero Section */
-      .hero-section {
-        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-        border-radius: 24px;
-        padding: 2rem;
-        margin-bottom: 1.5rem;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .hero-content {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        position: relative;
-        z-index: 2;
-      }
-
-      .hero-icon {
-        width: 64px;
-        height: 64px;
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.75rem;
-        color: white;
-      }
-
-      .hero-title {
-        color: white;
-        font-size: 1.6rem;
-        font-weight: 800;
-        margin: 0;
-      }
-
-      .hero-subtitle {
-        color: rgba(255, 255, 255, 0.9);
-        margin: 0.25rem 0 0;
-        font-size: 0.95rem;
-      }
-
-      .btn-refresh-hero {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        background: white;
-        color: #6d28d9;
-        border: none;
-        border-radius: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        position: relative;
-        z-index: 2;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      }
-
-      .btn-refresh-hero:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-      }
-
-      .spinner {
-        width: 18px;
-        height: 18px;
-        border: 2px solid rgba(109, 40, 217, 0.2);
-        border-top-color: #6d28d9;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-
-      .hero-decoration {
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        width: 200px;
-      }
-
-      .decoration-circle {
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-      }
-
+      .hero-section { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; }
+      .hero-content { display: flex; align-items: center; gap: 1.25rem; position: relative; z-index: 2; }
+      .hero-icon { width: 64px; height: 64px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: white; }
+      .hero-title { color: white; font-size: 1.6rem; font-weight: 800; margin: 0; }
+      .hero-subtitle { color: rgba(255, 255, 255, 0.9); margin: 0.25rem 0 0; font-size: 0.95rem; }
+      .btn-refresh-hero { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: white; color: #6d28d9; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; position: relative; z-index: 2; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+      .btn-refresh-hero:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
+      .spinner { width: 18px; height: 18px; border: 2px solid rgba(109, 40, 217, 0.2); border-top-color: #6d28d9; border-radius: 50%; animation: spin 0.8s linear infinite; }
+      .spinner-sm { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+      .hero-decoration { position: absolute; right: 0; top: 0; bottom: 0; width: 200px; }
+      .decoration-circle { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.1); }
       .c1 { width: 120px; height: 120px; top: -30px; right: 40px; }
       .c2 { width: 80px; height: 80px; bottom: -20px; right: 120px; }
 
       /* Stats Grid */
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-      }
-
-      .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 1.25rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-        border: 1px solid #e2e8f0;
-      }
-
-      .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-      }
-
+      .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+      .stat-card { background: white; border-radius: 16px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0; }
+      .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
       .stat-icon.pending { background: #fef3c7; color: #f59e0b; }
       .stat-icon.info { background: #ede9fe; color: #8b5cf6; }
-
-      .stat-info {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .stat-value {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #1e293b;
-      }
-
-      .stat-label {
-        font-size: 0.8rem;
-        color: #64748b;
-      }
+      .stat-info { display: flex; flex-direction: column; }
+      .stat-value { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
+      .stat-label { font-size: 0.8rem; color: #64748b; }
 
       /* Loading & Empty States */
-      .loading-state, .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 4rem 2rem;
-        background: white;
-        border-radius: 20px;
-        border: 1px solid #e2e8f0;
-        text-align: center;
-      }
-
-      .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid #e2e8f0;
-        border-top-color: #8b5cf6;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        margin-bottom: 1rem;
-      }
-
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-
-      .empty-icon {
-        width: 80px;
-        height: 80px;
-        background: #ede9fe;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 1.5rem;
-      }
-
-      .empty-icon i {
-        font-size: 2.5rem;
-        color: #8b5cf6;
-      }
-
-      .empty-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0 0 0.5rem;
-      }
-
-      .empty-text {
-        color: #64748b;
-        margin: 0;
-      }
+      .loading-state, .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; background: white; border-radius: 20px; border: 1px solid #e2e8f0; text-align: center; }
+      .loading-spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 1rem; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .empty-icon { width: 80px; height: 80px; background: #ede9fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
+      .empty-icon i { font-size: 2.5rem; color: #8b5cf6; }
+      .empty-title { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0 0 0.5rem; }
+      .empty-text { color: #64748b; margin: 0; }
 
       /* List Section */
-      .list-section {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-      }
-
-      .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.25rem 1.5rem;
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
-      }
-
-      .section-title {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0;
-        display: flex;
-        align-items: center;
-      }
-
-      .section-title i {
-        color: #8b5cf6;
-      }
-
-      .count-badge {
-        background: #8b5cf6;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 50px;
-        font-size: 0.85rem;
-        font-weight: 600;
-      }
+      .list-section { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; overflow: hidden; }
+      .section-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+      .section-title { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0; display: flex; align-items: center; }
+      .section-title i { color: #8b5cf6; }
+      .count-badge { background: #8b5cf6; color: white; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.85rem; font-weight: 600; }
 
       /* Candidates List */
-      .candidates-list {
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .candidate-card {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        overflow: hidden;
-        transition: all 0.2s;
-      }
-
-      .candidate-card:hover {
-        border-color: #c4b5fd;
-      }
-
-      .candidate-card.expanded {
-        border-color: #8b5cf6;
-        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1);
-      }
-
-      .card-main {
-        display: flex;
-        align-items: center;
-        padding: 1.25rem;
-        cursor: pointer;
-      }
-
-      .card-left {
-        margin-right: 1rem;
-      }
-
-      .avatar {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 1.1rem;
-      }
-
-      .card-content {
-        flex: 1;
-      }
-
-      .candidate-name {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #1e293b;
-      }
-
-      .candidate-info {
-        display: flex;
-        gap: 1.5rem;
-        margin-top: 0.25rem;
-      }
-
-      .info-item {
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        font-size: 0.85rem;
-        color: #64748b;
-      }
-
-      .info-item i {
-        color: #94a3b8;
-      }
-
-      .candidate-meta {
-        display: flex;
-        gap: 0.75rem;
-        margin-top: 0.5rem;
-      }
-
-      .meta-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.25rem 0.6rem;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 500;
-      }
-
-      .meta-badge.matricule {
-        background: #f1f5f9;
-        color: #475569;
-      }
-
-      .meta-badge.status {
-        background: #fef3c7;
-        color: #b45309;
-      }
-
-      .card-right {
-        padding-left: 1rem;
-      }
-
-      .expand-icon {
-        color: #94a3b8;
-        font-size: 1.25rem;
-        transition: transform 0.3s;
-      }
-
-      .expand-icon.rotated {
-        transform: rotate(180deg);
-      }
+      .candidates-list { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+      .candidate-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; transition: all 0.2s; }
+      .candidate-card:hover { border-color: #c4b5fd; }
+      .candidate-card.expanded { border-color: #8b5cf6; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1); }
+      .card-main { display: flex; align-items: center; padding: 1.25rem; cursor: pointer; }
+      .card-left { margin-right: 1rem; }
+      .avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem; }
+      .card-content { flex: 1; }
+      .candidate-name { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+      .candidate-info { display: flex; gap: 1.5rem; margin-top: 0.25rem; }
+      .info-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; color: #64748b; }
+      .info-item i { color: #94a3b8; }
+      .candidate-meta { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+      .meta-badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500; }
+      .meta-badge.matricule { background: #f1f5f9; color: #475569; }
+      .meta-badge.status { background: #fef3c7; color: #b45309; }
+      .card-right { padding-left: 1rem; }
+      .expand-icon { color: #94a3b8; font-size: 1.25rem; transition: transform 0.3s; }
+      .expand-icon.rotated { transform: rotate(180deg); }
 
       /* Card Details */
-      .card-details {
-        background: white;
-        border-top: 1px solid #e2e8f0;
-        padding: 1.5rem;
-        animation: slideDown 0.3s ease-out;
-      }
-
-      @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      .details-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-      }
-
-      .detail-section {
-        background: #f8fafc;
-        border-radius: 14px;
-        padding: 1.25rem;
-        border: 1px solid #e2e8f0;
-      }
-
-      .detail-section.decision {
-        border-left: 4px solid #8b5cf6;
-      }
-
-      .detail-title {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0 0 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .detail-title i {
-        color: #8b5cf6;
-      }
+      .card-details { background: white; border-top: 1px solid #e2e8f0; padding: 1.5rem; animation: slideDown 0.3s ease-out; }
+      @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+      .detail-section { background: #f8fafc; border-radius: 14px; padding: 1.25rem; border: 1px solid #e2e8f0; }
+      .detail-section.decision { border-left: 4px solid #8b5cf6; }
+      .detail-title { font-size: 0.85rem; font-weight: 700; color: #1e293b; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
+      .detail-title i { color: #8b5cf6; }
 
       /* Documents */
-      .documents-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .doc-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        background: white;
-        border: 1px dashed #cbd5e1;
-        border-radius: 10px;
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      .doc-item.available {
-        opacity: 1;
-        border-style: solid;
-        border-color: #e2e8f0;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .doc-item.available:hover {
-        border-color: #8b5cf6;
-        background: #faf5ff;
-      }
-
-      .doc-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-      }
-
+      .documents-list { display: flex; flex-direction: column; gap: 0.75rem; }
+      .doc-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: white; border: 1px dashed #cbd5e1; border-radius: 10px; opacity: 0.6; cursor: not-allowed; }
+      .doc-item.available { opacity: 1; border-style: solid; border-color: #e2e8f0; cursor: pointer; transition: all 0.2s; }
+      .doc-item.available:hover { border-color: #8b5cf6; background: #faf5ff; }
+      .doc-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
       .doc-icon.cv { background: #f3e8ff; color: #9333ea; }
       .doc-icon.diploma { background: #dbeafe; color: #2563eb; }
       .doc-icon.letter { background: #ffedd5; color: #ea580c; }
-
-      .doc-info {
-        flex: 1;
-      }
-
-      .doc-name {
-        display: block;
-        font-weight: 600;
-        font-size: 0.85rem;
-        color: #1e293b;
-      }
-
-      .doc-status {
-        display: block;
-        font-size: 0.75rem;
-        color: #64748b;
-      }
-
-      .doc-action {
-        color: #8b5cf6;
-        font-size: 1.1rem;
-      }
+      .doc-info { flex: 1; }
+      .doc-name { display: block; font-weight: 600; font-size: 0.85rem; color: #1e293b; }
+      .doc-status { display: block; font-size: 0.75rem; color: #64748b; }
+      .doc-action { color: #8b5cf6; font-size: 1.1rem; }
 
       /* Decision Buttons */
-      .decision-buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .btn-decision {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.875rem 1rem;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .btn-decision.accept {
-        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-        color: white;
-        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-      }
-
-      .btn-decision.accept:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
-      }
-
-      .btn-decision.reject {
-        background: white;
-        color: #dc2626;
-        border: 2px solid #fecaca;
-      }
-
-      .btn-decision.reject:hover {
-        background: #fef2f2;
-        border-color: #dc2626;
-      }
-
-      .decision-hint {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.5rem;
-        margin: 1rem 0 0;
-        padding: 0.75rem;
-        background: #ede9fe;
-        border-radius: 8px;
-        font-size: 0.8rem;
-        color: #6d28d9;
-      }
-
-      .decision-hint i {
-        margin-top: 0.1rem;
-      }
-
-      /* Refusal Form */
-      .refusal-form {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        border-radius: 12px;
-        padding: 1rem;
-      }
-
-      .refusal-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #dc2626;
-        margin-bottom: 0.75rem;
-      }
-
-      .refusal-textarea {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #fecaca;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        resize: none;
-        background: white;
-      }
-
-      .refusal-textarea:focus {
-        outline: none;
-        border-color: #f87171;
-        box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
-      }
-
-      .refusal-actions {
-        display: flex;
-        gap: 0.75rem;
-        margin-top: 1rem;
-      }
-
-      .btn-cancel, .btn-confirm-reject {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.75rem;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .btn-cancel {
-        background: white;
-        border: 1px solid #e2e8f0;
-        color: #64748b;
-      }
-
-      .btn-cancel:hover {
-        background: #f8fafc;
-      }
-
-      .btn-confirm-reject {
-        background: #dc2626;
-        border: none;
-        color: white;
-      }
-
-      .btn-confirm-reject:hover:not(:disabled) {
-        background: #b91c1c;
-      }
-
-      .btn-confirm-reject:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
+      .decision-buttons { display: flex; flex-direction: column; gap: 0.75rem; }
+      .btn-decision { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.875rem 1rem; border: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+      .btn-decision.accept { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
+      .btn-decision.accept:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4); }
+      .btn-decision.reject { background: white; color: #dc2626; border: 2px solid #fecaca; }
+      .btn-decision.reject:hover { background: #fef2f2; border-color: #dc2626; }
+      .decision-hint { display: flex; align-items: flex-start; gap: 0.5rem; margin: 1rem 0 0; padding: 0.75rem; background: #ede9fe; border-radius: 8px; font-size: 0.8rem; color: #6d28d9; }
 
       /* Accept Form */
-      .accept-form {
-        background: #f0fdf4;
-        border: 1px solid #86efac;
-        border-radius: 12px;
-        padding: 1rem;
-      }
+      .accept-form { background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 1.25rem; }
+      .accept-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; color: #15803d; margin-bottom: 0.75rem; }
+      .required { color: #ef4444; }
+      .accept-textarea { width: 100%; padding: 0.875rem; border: 2px solid #86efac; border-radius: 10px; font-size: 0.95rem; resize: vertical; min-height: 100px; background: white; font-family: inherit; line-height: 1.5; }
+      .accept-textarea:focus { outline: none; border-color: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1); }
+      .accept-textarea::placeholder { color: #94a3b8; }
+      .char-count { font-size: 0.75rem; color: #64748b; margin-top: 0.35rem; text-align: right; }
+      .char-count.warning { color: #f59e0b; }
+      .info-box { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 1rem; padding: 0.75rem; background: #dcfce7; border-radius: 8px; font-size: 0.8rem; color: #166534; }
+      .info-box i { margin-top: 0.1rem; flex-shrink: 0; }
+      .accept-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+      .btn-confirm-accept { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.875rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border: none; color: white; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
+      .btn-confirm-accept:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4); }
+      .btn-confirm-accept:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
-      .accept-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #15803d;
-        margin-bottom: 0.75rem;
-      }
+      /* Refusal Form */
+      .refusal-form { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 1rem; }
+      .refusal-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; color: #dc2626; margin-bottom: 0.75rem; }
+      .refusal-textarea { width: 100%; padding: 0.75rem; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.9rem; resize: none; background: white; }
+      .refusal-textarea:focus { outline: none; border-color: #f87171; box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15); }
+      .refusal-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+      .btn-cancel { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: white; border: 1px solid #e2e8f0; color: #64748b; }
+      .btn-cancel:hover { background: #f8fafc; }
+      .btn-confirm-reject { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: #dc2626; border: none; color: white; }
+      .btn-confirm-reject:hover:not(:disabled) { background: #b91c1c; }
+      .btn-confirm-reject:disabled { opacity: 0.5; cursor: not-allowed; }
 
-      .accept-textarea {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #86efac;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        resize: none;
-        background: white;
-      }
-
-      .accept-textarea:focus {
-        outline: none;
-        border-color: #22c55e;
-        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
-      }
-
-      .accept-actions {
-        display: flex;
-        gap: 0.75rem;
-        margin-top: 1rem;
-      }
-
-      .btn-confirm-accept {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.75rem;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: #22c55e;
-        border: none;
-        color: white;
-      }
-
-      .btn-confirm-accept:hover:not(:disabled) {
-        background: #16a34a;
-      }
-
-      .btn-confirm-accept:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      /* Responsive */
       @media (max-width: 768px) {
-        .hero-section {
-          flex-direction: column;
-          gap: 1.5rem;
-          text-align: center;
-        }
-
-        .hero-content {
-          flex-direction: column;
-        }
-
-        .stats-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .details-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .candidate-info {
-          flex-direction: column;
-          gap: 0.25rem;
-        }
+        .hero-section { flex-direction: column; gap: 1.5rem; text-align: center; }
+        .hero-content { flex-direction: column; }
+        .stats-grid { grid-template-columns: 1fr; }
+        .details-grid { grid-template-columns: 1fr; }
+        .candidate-info { flex-direction: column; gap: 0.25rem; }
       }
     `]
 })
@@ -984,6 +427,7 @@ export class DirectorValidationComponent implements OnInit {
     showRefusalInputId = signal<number | null>(null);
     showAcceptInputId = signal<number | null>(null);
     isLoading = signal(false);
+    isValidating = signal(false);
     motifText = '';
     sujetTheseText = '';
 
@@ -1011,10 +455,8 @@ export class DirectorValidationComponent implements OnInit {
             return;
         }
 
-        // ✅ Récupérer les candidats EN_ATTENTE_DIRECTEUR assignés à CE directeur
         this.userService.getUsersByEtat('EN_ATTENTE_DIRECTEUR').subscribe({
             next: users => {
-                // Filtrer pour n'afficher que les candidats assignés à ce directeur
                 const myPendingUsers = users.filter(u => u.directeurId === currentUser.id);
                 this.pendingUsers.set(myPendingUsers);
                 this.isLoading.set(false);
@@ -1067,24 +509,28 @@ export class DirectorValidationComponent implements OnInit {
     confirmerAccept(user: User, event: Event) {
         event.stopPropagation();
 
-        if (!this.sujetTheseText.trim()) {
-            alert('Veuillez saisir le sujet de thèse.');
+        if (!this.sujetTheseText.trim() || this.sujetTheseText.trim().length < 10) {
+            alert('Veuillez saisir un sujet de thèse valide (minimum 10 caractères).');
             return;
         }
 
-        if (confirm(`Confirmer l'inscription de ${user.nom} ${user.prenom} avec ce sujet de thèse ?`)) {
-            // Appel API avec le sujet de thèse
+        if (confirm(`Confirmer l'inscription de ${user.nom} ${user.prenom} avec ce sujet de thèse ?\n\n"${this.sujetTheseText.trim()}"`)) {
+            this.isValidating.set(true);
+
+            // ✅ Appel API avec le sujet de thèse
             this.userService.validerCandidatureDirecteurAvecSujet(user.id, this.sujetTheseText.trim()).subscribe({
                 next: () => {
-                    alert('✅ Candidature validée ! Le candidat est maintenant doctorant.');
+                    this.isValidating.set(false);
+                    alert('✅ Candidature validée ! Le candidat est maintenant doctorant avec son sujet de thèse enregistré.');
                     this.loadData();
                     this.expandedUserId.set(null);
                     this.showAcceptInputId.set(null);
                     this.sujetTheseText = '';
                 },
                 error: (err) => {
+                    this.isValidating.set(false);
                     console.error('Erreur validation:', err);
-                    alert('❌ Erreur lors de la validation.');
+                    alert('❌ Erreur lors de la validation: ' + (err.error?.message || err.error?.error || 'Erreur inconnue'));
                 }
             });
         }
@@ -1093,6 +539,7 @@ export class DirectorValidationComponent implements OnInit {
     initiateRefusal(id: number, event: Event) {
         event.stopPropagation();
         this.showRefusalInputId.set(id);
+        this.showAcceptInputId.set(null);
         this.motifText = '';
     }
 

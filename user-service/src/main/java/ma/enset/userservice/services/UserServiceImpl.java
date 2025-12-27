@@ -14,186 +14,239 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    // =============================================================
+    // CRUD
+    // =============================================================
+
     @Override
     public User createUser(User user) {
-        log.info("Creating user: {}", user.getUsername());
+        log.info("Creating user: {}", user.getMatricule());
+
+        if (userRepository.existsByMatricule(user.getMatricule())) {
+            throw new RuntimeException("Un utilisateur avec ce matricule existe déjà");
+        }
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new RuntimeException("Un utilisateur avec cet email existe déjà");
+        }
+
+        // Encoder le mot de passe
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        if (user.getEtat() == null) user.setEtat("EN_ATTENTE_ADMIN");
+
         return userRepository.save(user);
     }
 
     @Override
-    public User updateUser(Long id, User user) {
-        log.info("Updating user with id: {}", id);
-
-        return userRepository.findById(id)
-                .map(existingUser -> {
-                    if (user.getEmail() != null) existingUser.setEmail(user.getEmail());
-                    if (user.getNom() != null) existingUser.setNom(user.getNom());
-                    if (user.getPrenom() != null) existingUser.setPrenom(user.getPrenom());
-                    if (user.getRole() != null) existingUser.setRole(user.getRole());
-                    if (user.getEnabled() != null) existingUser.setEnabled(user.getEnabled());
-                    if (user.getTelephone() != null) existingUser.setTelephone(user.getTelephone());
-                    if (user.getEtat() != null) existingUser.setEtat(user.getEtat());
-                    if (user.getMotifRefus() != null) existingUser.setMotifRefus(user.getMotifRefus());
-                    if (user.getDirecteurId() != null) existingUser.setDirecteurId(user.getDirecteurId());
-
-                    // Suivi doctorant
-                    if (user.getAnneeThese() != null) existingUser.setAnneeThese(user.getAnneeThese());
-                    if (user.getNbPublications() != null) existingUser.setNbPublications(user.getNbPublications());
-                    if (user.getNbConferences() != null) existingUser.setNbConferences(user.getNbConferences());
-                    if (user.getHeuresFormation() != null) existingUser.setHeuresFormation(user.getHeuresFormation());
-
-                    if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-                        existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
-                    }
-
-                    return userRepository.save(existingUser);
-                })
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-    }
-
-    // ========================================================
-    // WORKFLOW ADMIN
-    // ========================================================
-
-    @Override
-    public User validerCandidature(Long id) {
-        log.info("Validation candidature par Admin (sans directeur) - user id: {}", id);
+    public User updateUser(Long id, User userDetails) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
 
-        user.setEtat("EN_ATTENTE_DIRECTEUR");
-        return userRepository.save(user);
-    }
-
-    @Override
-    public User validerCandidatureAvecDirecteur(Long id, Long directeurId) {
-        log.info("Validation candidature par Admin - user id: {} avec directeur: {}", id, directeurId);
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-        // Vérifier que le directeur existe
-        if (directeurId != null) {
-            User directeur = userRepository.findById(directeurId)
-                    .orElseThrow(() -> new RuntimeException("Directeur non trouvé avec l'id: " + directeurId));
-
-            if (directeur.getRole() != Role.DIRECTEUR_THESE) {
-                throw new RuntimeException("L'utilisateur sélectionné n'est pas un Directeur de Thèse");
-            }
-
-            user.setDirecteurId(directeurId);
-        }
-
-        user.setEtat("EN_ATTENTE_DIRECTEUR");
-        return userRepository.save(user);
-    }
-
-    @Override
-    public User refuserCandidature(Long id, String motif) {
-        log.info("Refus candidature par Admin - user id: {}", id);
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-        user.setEtat("REFUSE");
-        user.setMotifRefus(motif);
-        return userRepository.save(user);
-    }
-
-    // ========================================================
-    // WORKFLOW DIRECTEUR DE THÈSE
-    // ========================================================
-
-    @Override
-    public User validerCandidatureDirecteur(Long id) {
-        log.info("Validation Directeur pour user id: {}", id);
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-        if (!"EN_ATTENTE_DIRECTEUR".equals(user.getEtat())) {
-            throw new RuntimeException("Ce candidat n'est pas en attente de validation par le directeur. État actuel: " + user.getEtat());
-        }
-
-        user.setEtat("VALIDE");
-        user.setRole(Role.DOCTORANT);
-        user.setDateInscription(LocalDateTime.now());
-        user.setAnneeThese(1);
+        if (userDetails.getNom() != null) user.setNom(userDetails.getNom());
+        if (userDetails.getPrenom() != null) user.setPrenom(userDetails.getPrenom());
+        if (userDetails.getEmail() != null) user.setEmail(userDetails.getEmail());
+        if (userDetails.getTelephone() != null) user.setTelephone(userDetails.getTelephone());
+        if (userDetails.getRole() != null) user.setRole(userDetails.getRole());
+        if (userDetails.getEnabled() != null) user.setEnabled(userDetails.getEnabled());
 
         return userRepository.save(user);
-    }
-
-    @Override
-    public User refuserCandidatureDirecteur(Long id, String motif) {
-        log.info("Refus candidature par Directeur - user id: {} avec motif: {}", id, motif);
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'id: " + id));
-
-        if (!"EN_ATTENTE_DIRECTEUR".equals(user.getEtat())) {
-            throw new RuntimeException("Ce candidat n'est pas en attente de validation par le directeur. État actuel: " + user.getEtat());
-        }
-
-        user.setEtat("REFUSE");
-        user.setMotifRefus(motif);
-
-        return userRepository.save(user);
-    }
-
-    // ========================================================
-    // AUTRES MÉTHODES
-    // ========================================================
-
-    @Override
-    public User changeRole(Long id, Role newRole) {
-        log.info("Changement de rôle pour user {}: {}", id, newRole);
-        return userRepository.findById(id).map(user -> {
-            user.setRole(newRole);
-            return userRepository.save(user);
-        }).orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
     }
 
     @Override
     public void deleteUser(Long id) {
-        log.info("Deleting user with id: {}", id);
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("Utilisateur non trouvé avec l'ID: " + id);
+        }
         userRepository.deleteById(id);
     }
 
+    // =============================================================
+    // RECHERCHE
+    // =============================================================
+
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> getUserByUsername(String username) {
         return userRepository.findByMatricule(username);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> getUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
+    // =============================================================
+    // LISTES
+    // =============================================================
+
     @Override
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> getUsersByRole(Role role) {
-        log.info("Fetching users with role: {}", role);
         return userRepository.findByRole(role);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> getUsersByEtat(String etat) {
-        log.info("Fetching users with etat: {}", etat);
         return userRepository.findByEtat(etat);
+    }
+
+    // =============================================================
+    // CHANGEMENT DE RÔLE
+    // =============================================================
+
+    @Override
+    public User changeRole(Long id, Role newRole) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+        user.setRole(newRole);
+        return userRepository.save(user);
+    }
+
+    // =============================================================
+    // WORKFLOW ADMIN
+    // =============================================================
+
+    @Override
+    public User validerCandidature(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (!"EN_ATTENTE_ADMIN".equals(user.getEtat())) {
+            throw new RuntimeException("Cette candidature n'est pas en attente de validation admin");
+        }
+
+        user.setEtat("EN_ATTENTE_DIRECTEUR");
+        log.info("✅ Candidature {} validée par admin (sans directeur)", id);
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User validerCandidatureAvecDirecteur(Long id, Long directeurId) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
+
+        if (!"EN_ATTENTE_ADMIN".equals(user.getEtat())) {
+            throw new RuntimeException("Cette candidature n'est pas en attente de validation admin. État actuel: " + user.getEtat());
+        }
+
+        // Vérifier que le directeur existe
+        User directeur = userRepository.findById(directeurId)
+                .orElseThrow(() -> new RuntimeException("Directeur non trouvé avec l'ID: " + directeurId));
+
+        if (directeur.getRole() != Role.DIRECTEUR_THESE) {
+            throw new RuntimeException("L'utilisateur sélectionné n'est pas un directeur de thèse");
+        }
+
+        user.setEtat("EN_ATTENTE_DIRECTEUR");
+        user.setDirecteurId(directeurId);
+
+        log.info("✅ Candidature {} validée par admin avec directeur {}", id, directeurId);
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User refuserCandidature(Long id, String motif) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        user.setEtat("REFUSE");
+        user.setMotifRefus(motif);
+
+        log.info("❌ Candidature {} refusée par admin. Motif: {}", id, motif);
+        return userRepository.save(user);
+    }
+
+    // =============================================================
+    // WORKFLOW DIRECTEUR
+    // =============================================================
+
+    @Override
+    public User validerCandidatureDirecteur(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
+
+        if (!"EN_ATTENTE_DIRECTEUR".equals(user.getEtat())) {
+            throw new RuntimeException("Cette candidature n'est pas en attente de validation directeur. État actuel: " + user.getEtat());
+        }
+
+        user.setRole(Role.DOCTORANT);
+        user.setEtat("VALIDE");
+        user.setDateInscription(LocalDateTime.now());
+        user.setAnneeThese(1);
+
+        log.info("✅ Candidature {} validée par directeur (sans sujet)", id);
+        return userRepository.save(user);
+    }
+
+    /**
+     * ✅ NOUVEAU : Validation directeur AVEC sujet de thèse
+     * Le sujet est stocké dans le champ titreThese de l'utilisateur
+     */
+    @Override
+    public User validerCandidatureDirecteurAvecSujet(Long id, String sujetThese) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
+
+        if (!"EN_ATTENTE_DIRECTEUR".equals(user.getEtat())) {
+            throw new RuntimeException("Cette candidature n'est pas en attente de validation directeur. État actuel: " + user.getEtat());
+        }
+
+        // Valider le sujet de thèse
+        if (sujetThese == null || sujetThese.trim().isEmpty()) {
+            throw new RuntimeException("Le sujet de thèse est obligatoire");
+        }
+
+        // ✅ Mettre à jour le sujet de thèse
+        user.setTitreThese(sujetThese.trim());
+
+        // Changer le rôle en DOCTORANT
+        user.setRole(Role.DOCTORANT);
+        user.setEtat("VALIDE");
+        user.setDateInscription(LocalDateTime.now());
+        user.setAnneeThese(1);
+
+        User savedUser = userRepository.save(user);
+
+        log.info("✅ Candidature {} validée par directeur", id);
+        log.info("   Doctorant: {} {}", user.getNom(), user.getPrenom());
+        log.info("   Sujet de thèse: {}", sujetThese);
+
+        return savedUser;
+    }
+
+    @Override
+    public User refuserCandidatureDirecteur(Long id, String motif) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (!"EN_ATTENTE_DIRECTEUR".equals(user.getEtat())) {
+            throw new RuntimeException("Cette candidature n'est pas en attente de validation directeur");
+        }
+
+        user.setEtat("REFUSE");
+        user.setMotifRefus(motif);
+
+        log.info("❌ Candidature {} refusée par directeur. Motif: {}", id, motif);
+        return userRepository.save(user);
     }
 }

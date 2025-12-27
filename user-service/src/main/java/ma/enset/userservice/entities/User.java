@@ -73,9 +73,15 @@ public class User implements UserDetails {
     @Column(columnDefinition = "TEXT")
     private String motifRefus;
 
-    // ✅ NOUVEAU : Directeur de thèse assigné
+    // ✅ Directeur de thèse assigné
     @Column(name = "directeur_id")
     private Long directeurId;
+
+    // =============================================================
+    // ✅ NOUVEAU : SUJET DE THÈSE (assigné par le directeur)
+    // =============================================================
+    @Column(name = "titre_these", columnDefinition = "TEXT")
+    private String titreThese;
 
     // =============================================================
     // SUIVI DOCTORANT (Selon CDC)

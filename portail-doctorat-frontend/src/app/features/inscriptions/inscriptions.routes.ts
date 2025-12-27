@@ -14,7 +14,13 @@ export const INSCRIPTIONS_ROUTES: Routes = [
     loadComponent: () => import('./inscription-detail/inscription-detail.component').then(m => m.InscriptionDetailComponent)
   },
   {
+    // ✅ Route existante pour l'édition
     path: ':id/edit',
+    loadComponent: () => import('./inscription-form/inscription-form.component').then(m => m.InscriptionFormComponent)
+  },
+  {
+    // ✅ AJOUT : Route alternative "modifier/:id" pour éviter le 404
+    path: 'modifier/:id',
     loadComponent: () => import('./inscription-form/inscription-form.component').then(m => m.InscriptionFormComponent)
   }
 ];
