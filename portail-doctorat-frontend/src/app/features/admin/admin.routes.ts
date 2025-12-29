@@ -16,20 +16,21 @@ export const ADMIN_ROUTES: Routes = [
             .then(m => m.AdminDashboardComponent)
   },
 
-  // 🔹 Gestion des utilisateurs
-  {
-    path: 'users',
-    loadComponent: () =>
-        import('./user-management/user-management.component')
-            .then(m => m.UserManagementComponent)
-  },
-
+  // ✅ IMPORTANT: Route spécifique AVANT la route générique 'users'
   // 🔹 Ajouter un directeur
   {
     path: 'users/new-director',
     loadComponent: () =>
         import('./new-director/new-director.component')
             .then(m => m.NewDirectorComponent)
+  },
+
+  // 🔹 Gestion des utilisateurs
+  {
+    path: 'users',
+    loadComponent: () =>
+        import('./user-management/user-management.component')
+            .then(m => m.UserManagementComponent)
   },
 
   // 🔹 Campagnes (routes enfants)

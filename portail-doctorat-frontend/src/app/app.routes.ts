@@ -66,25 +66,21 @@ export const routes: Routes = [
   // ============================================
   // DIRECTEUR DE THÈSE
   // ============================================
-  // 1. Validation des nouvelles candidatures
   {
     path: 'validations',
     loadComponent: () => import('./features/directeur/validation/director-validation.component').then(m => m.DirectorValidationComponent),
     canActivate: [authGuard]
   },
-  // 2. Réinscriptions
   {
     path: 'director/reinscriptions',
     loadComponent: () => import('./features/directeur/reinscriptions/directeur-reinscriptions.component').then(m => m.DirecteurReinscriptionsComponent),
     canActivate: [authGuard]
   },
-  // 3. Dérogations
   {
     path: 'director/derogations',
     loadComponent: () => import('./features/directeur/derogations/director-derogations.component').then(m => m.DirectorDerogationsComponent),
     canActivate: [authGuard]
   },
-  // 4. Soutenances
   {
     path: 'director/soutenances',
     loadComponent: () => import('./features/directeur/soutenances/director-soutenance.component').then(m => m.DirectorSoutenanceComponent),
@@ -129,6 +125,15 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/soutenance-detail/soutenance-detail.component').then(m => m.SoutenanceDetailComponent),
     canActivate: [authGuard]
   },
+
+  // ✅ AJOUTÉ: Route pour créer un nouveau directeur (AVANT admin/users)
+  {
+    path: 'admin/users/new-director',
+    loadComponent: () => import('./features/admin/new-director/new-director.component').then(m => m.NewDirectorComponent),
+    canActivate: [authGuard]
+  },
+
+  // Gestion des utilisateurs
   {
     path: 'admin/users',
     loadComponent: () => import('./features/admin/user-management/user-management.component').then(m => m.UserManagementComponent),

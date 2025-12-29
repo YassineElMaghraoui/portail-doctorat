@@ -12,8 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @RestController
-// ✅ CORRECTION IMPORTANTE : On le place sous /api/users
-@RequestMapping("/api/users/files")
+// ✅ CORRECTION: Changer de /api/users/files à /api/files
+@RequestMapping("/api/files")
 @CrossOrigin(origins = "*")
 public class FileController {
 
@@ -25,21 +25,29 @@ public class FileController {
             Path file = rootLocation.resolve(filename).normalize();
             Resource resource = new UrlResource(file.toUri());
 
-            if (resource.exists() || resource.isReadable()) {
-                // Détection simple du type mime
+            if (resource.exists() && resource.isReadable()) {
+                // Détection du type MIME
                 String contentType = "application/octet-stream";
-                if(filename.endsWith(".pdf")) contentType = "application/pdf";
-                else if(filename.endsWith(".jpg") || filename.endsWith(".jpeg")) contentType = "image/jpeg";
-                else if(filename.endsWith(".png")) contentType = "image/png";
+                if (filename.endsWith(".pdf")) {
+                    contentType = "application/pdf";
+                } else if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) {
+                    contentType = "image/jpeg";
+                } else if (filename.endsWith(".png")) {
+                    contentType = "image/png";
+                } else if (filename.endsWith(".doc") || filename.endsWith(".docx")) {
+                    contentType = "application/msword";
+                }
 
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(contentType))
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                         .body(resource);
             } else {
+                System.err.println("❌ Fichier non trouvé ou non lisible: " + file.toAbsolutePath());
                 return ResponseEntity.notFound().build();
             }
         } catch (MalformedURLException e) {
+            System.err.println("❌ URL malformée: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }

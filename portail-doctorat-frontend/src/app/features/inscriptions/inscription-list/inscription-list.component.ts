@@ -107,12 +107,42 @@ import { Inscription } from '@core/models/inscription.model';
                         <span class="info-label">Laboratoire</span>
                         <span class="info-value">{{ inscription.laboratoireAccueil || 'Non défini' }}</span>
                       </div>
-                      @if (inscription.commentaireDirecteur) {
-                        <div class="comment-box">
-                          <i class="bi bi-chat-left-text"></i>
-                          <span>{{ inscription.commentaireDirecteur }}</span>
+
+                      <!-- ✅ MODIFICATION ICI : Gestion intelligente des commentaires -->
+
+                      <!-- 1. Cas : Rejet par l'ADMINISTRATION -->
+                      @if (inscription.statut === 'REJETE_ADMIN' && inscription.commentaireAdmin) {
+                        <div class="comment-box error">
+                          <i class="bi bi-exclamation-triangle-fill"></i>
+                          <div class="comment-content">
+                            <strong>Motif du refus (Administration) :</strong>
+                            <p>{{ inscription.commentaireAdmin }}</p>
+                          </div>
                         </div>
                       }
+
+
+                      @else if (inscription.statut === 'REJETE_DIRECTEUR' && inscription.commentaireDirecteur) {
+                        <div class="comment-box error">
+                          <i class="bi bi-exclamation-circle-fill"></i>
+                          <div class="comment-content">
+                            <strong>Motif du refus (Directeur) :</strong>
+                            <p>{{ inscription.commentaireDirecteur }}</p>
+                          </div>
+                        </div>
+                      }
+
+
+                      @else if (inscription.commentaireDirecteur) {
+                        <div class="comment-box">
+                          <i class="bi bi-chat-left-text"></i>
+                          <div class="comment-content">
+                            <strong>Remarque Directeur :</strong>
+                            <p>{{ inscription.commentaireDirecteur }}</p>
+                          </div>
+                        </div>
+                      }
+
                     </div>
 
                     <!-- Actions pour BROUILLON -->
@@ -244,7 +274,12 @@ import { Inscription } from '@core/models/inscription.model';
     .info-row:last-child { margin-bottom: 0; }
     .info-row .info-label { font-size: 0.75rem; color: #64748b; margin-bottom: 0.15rem; }
     .info-row .info-value { font-size: 0.9rem; font-weight: 500; color: #1e293b; }
-    .comment-box { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border-radius: 8px; font-size: 0.85rem; color: #1d4ed8; }
+
+    .comment-box { display: flex; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; padding: 0.85rem; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; color: #1d4ed8; font-size: 0.9rem; }
+    .comment-box.error { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+    .comment-content { display: flex; flex-direction: column; gap: 0.25rem; }
+    .comment-content p { margin: 0; }
+
     .card-actions { display: flex; gap: 0.75rem; padding: 1rem 1.25rem; border-top: 1px solid #e2e8f0; background: white; }
     .btn-action { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; border: none; }
     .btn-action.submit { background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }

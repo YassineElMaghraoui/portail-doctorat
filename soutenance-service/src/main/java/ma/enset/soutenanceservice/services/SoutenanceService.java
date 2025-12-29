@@ -12,6 +12,16 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service de gestion des soutenances
+ *
+ * WORKFLOW CORRECT:
+ * 1. SOUMIS → Directeur valide prérequis → PREREQUIS_VALIDES
+ * 2. PREREQUIS_VALIDES → Admin autorise → AUTORISEE
+ * 3. AUTORISEE → Directeur propose jury → JURY_PROPOSE
+ * 4. JURY_PROPOSE → Admin valide jury + planifie → PLANIFIEE
+ * 5. PLANIFIEE → Admin enregistre résultat → TERMINEE
+ */
 public interface SoutenanceService {
 
     // ========================================================
@@ -47,28 +57,27 @@ public interface SoutenanceService {
     Soutenance rejeterParDirecteur(Long soutenanceId, String commentaire);
 
     // ========================================================
-    // JURYS DISPONIBLES (pour sélection dropdown)
+    // ÉTAPE 2: ADMIN - Autorise la demande
+    // PREREQUIS_VALIDES → AUTORISEE
     // ========================================================
 
     /**
-     * Récupérer tous les jurys disponibles
+     * L'admin approuve la demande après validation des prérequis par le directeur.
+     * Le directeur pourra ensuite proposer le jury.
      */
+    Soutenance autoriserDemande(Long soutenanceId, String commentaire);
+
+    // ========================================================
+    // JURYS DISPONIBLES
+    // ========================================================
+
     List<JuryDisponible> getJurysDisponibles();
-
-    /**
-     * Récupérer les jurys disponibles par rôle
-     * @param role - PRESIDENT, RAPPORTEUR, EXAMINATEUR
-     */
     List<JuryDisponible> getJurysDisponiblesByRole(RoleJury role);
-
-    /**
-     * Récupérer un jury disponible par ID
-     */
     Optional<JuryDisponible> getJuryDisponibleById(Long id);
 
     // ========================================================
-    // ÉTAPE 2: DIRECTEUR - Propose le jury
-    // PREREQUIS_VALIDES → JURY_PROPOSE
+    // ÉTAPE 3: DIRECTEUR - Propose le jury
+    // AUTORISEE → JURY_PROPOSE
     // ========================================================
 
     Soutenance ajouterMembreJury(Long soutenanceId, MembreJury membreJury);
@@ -76,30 +85,22 @@ public interface SoutenanceService {
     Soutenance proposerJury(Long soutenanceId);
 
     // ========================================================
-    // ÉTAPE 3: ADMIN - Valide ou refuse le jury
-    // JURY_PROPOSE → AUTORISEE ou → PREREQUIS_VALIDES (retour)
+    // ÉTAPE 4: ADMIN - Valide ou refuse le jury
     // ========================================================
 
     Soutenance validerJury(Long soutenanceId, String commentaire);
     Soutenance refuserJury(Long soutenanceId, String commentaire);
 
     // ========================================================
-    // ÉTAPE 4: DIRECTEUR - Propose date de soutenance
-    // ========================================================
-
-    Soutenance proposerDateSoutenance(Long soutenanceId, LocalDate date, LocalTime heure, String lieu);
-
-    // ========================================================
     // ÉTAPE 5: ADMIN - Planifie la soutenance
-    // AUTORISEE → PLANIFIEE
     // ========================================================
 
     Soutenance planifierSoutenance(Long soutenanceId, LocalDate date, LocalTime heure, String lieu);
     Soutenance refuserPlanification(Long soutenanceId, String commentaire);
+    Soutenance proposerDateSoutenance(Long soutenanceId, LocalDate date, LocalTime heure, String lieu);
 
     // ========================================================
     // ÉTAPE 6: RÉSULTAT
-    // PLANIFIEE → TERMINEE
     // ========================================================
 
     Soutenance enregistrerResultat(Long id, Double note, String mention, Boolean felicitations);
@@ -110,8 +111,8 @@ public interface SoutenanceService {
 
     Soutenance rejeterSoutenance(Long id, String motif);
     Soutenance soumettreRapportRapporteur(Long soutenanceId, Long membreJuryId, Boolean avisFavorable, String commentaire);
-
-    // Legacy
     Soutenance verifierPrerequisEtSoumettre(Long id);
+
+    @Deprecated
     Soutenance autoriserSoutenance(Long id, String commentaire);
 }
