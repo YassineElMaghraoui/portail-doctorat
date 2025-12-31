@@ -54,7 +54,8 @@ export const ADMIN_ROUTES: Routes = [
     path: 'soutenances',
     loadComponent: () =>
         import('./soutenance-list/soutenance-list.component')
-            .then(m => m.SoutenanceListComponent)
+            // ✅ CORRECTION ICI : Utilisation du bon nom de classe
+            .then(m => m.AdminSoutenanceComponent)
   },
   {
     path: 'soutenances/:id',

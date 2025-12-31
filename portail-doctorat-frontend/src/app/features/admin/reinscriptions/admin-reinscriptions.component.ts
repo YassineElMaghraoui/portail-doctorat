@@ -19,139 +19,177 @@ import { UserService } from '@core/services/user.service';
                         <div class="hero-icon"><i class="bi bi-journal-check"></i></div>
                         <div>
                             <h1 class="hero-title">Gestion des Réinscriptions</h1>
-                            <p class="hero-subtitle">Validez les demandes de réinscription approuvées par les directeurs</p>
+                            <p class="hero-subtitle">Validez les dossiers annuels des doctorants</p>
                         </div>
                     </div>
-                    <div class="hero-stats">
-                        <div class="hero-stat">
-                            <span class="stat-number">{{ inscriptions().length }}</span>
-                            <span class="stat-label">En attente</span>
-                        </div>
+                    <button class="btn-refresh" (click)="loadData()" [disabled]="isLoading()">
+                        @if (isLoading()) { <span class="spinner"></span> } @else { <i class="bi bi-arrow-clockwise"></i> }
+                        Actualiser
+                    </button>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card orange">
+                        <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                        <div class="stat-info"><span class="stat-value">{{ getCount('EN_ATTENTE_ADMIN') }}</span><span class="stat-label">À traiter (Admin)</span></div>
+                    </div>
+                    <div class="stat-card blue">
+                        <div class="stat-icon"><i class="bi bi-person-badge"></i></div>
+                        <div class="stat-info"><span class="stat-value">{{ getCount('EN_ATTENTE_DIRECTEUR') }}</span><span class="stat-label">Chez Directeur</span></div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                        <div class="stat-info"><span class="stat-value">{{ getCount('ADMIS') }}</span><span class="stat-label">Validées</span></div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+                        <div class="stat-info"><span class="stat-value">{{ getCount('REJETE') }}</span><span class="stat-label">Refusées</span></div>
                     </div>
                 </div>
 
-                <!-- Info Banner -->
-                <div class="info-banner">
-                    <div class="info-icon"><i class="bi bi-info-circle"></i></div>
-                    <div class="info-content">
-                        <strong>Réinscriptions validées par les directeurs</strong>
-                        <p>Ces demandes ont été approuvées par les directeurs de thèse et attendent votre validation finale pour confirmer la réinscription administrative.</p>
+                <!-- Tabs -->
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <button class="tab-btn" [class.active]="activeTab === 'EN_ATTENTE_ADMIN'" (click)="setTab('EN_ATTENTE_ADMIN')">
+                            <i class="bi bi-hourglass-split"></i> À traiter
+                            @if (getCount('EN_ATTENTE_ADMIN') > 0) { <span class="tab-badge">{{ getCount('EN_ATTENTE_ADMIN') }}</span> }
+                        </button>
+                        <button class="tab-btn" [class.active]="activeTab === 'EN_ATTENTE_DIRECTEUR'" (click)="setTab('EN_ATTENTE_DIRECTEUR')">
+                            <i class="bi bi-person-badge"></i> Chez directeur
+                            @if (getCount('EN_ATTENTE_DIRECTEUR') > 0) { <span class="tab-badge info">{{ getCount('EN_ATTENTE_DIRECTEUR') }}</span> }
+                        </button>
+                        <button class="tab-btn" [class.active]="activeTab === 'HISTORY'" (click)="setTab('HISTORY')">
+                            <i class="bi bi-clock-history"></i> Historique
+                        </button>
                     </div>
                 </div>
 
-                <!-- Loading -->
-                @if (isLoading()) {
-                    <div class="loading-state">
-                        <div class="loading-spinner"></div>
-                        <span>Chargement des demandes...</span>
+                <!-- Loading & Empty State -->
+                @if (isLoading()) { <div class="loading-state"><div class="loading-spinner"></div><span>Chargement des dossiers...</span></div> }
+                @else if (filteredInscriptions().length === 0) {
+                    <div class="section-card"><div class="empty-state"><div class="empty-icon"><i class="bi bi-inbox"></i></div><h3>Aucun dossier</h3><p>Rien à afficher ici pour le moment.</p></div></div>
+                }
+
+                <!-- Liste (Tableau) -->
+                @if (!isLoading() && filteredInscriptions().length > 0) {
+                    <div class="section-card">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                <tr>
+                                    <th>Doctorant</th>
+                                    <th>Directeur</th>
+                                    <th>Année</th>
+                                    <th>Sujet</th>
+                                    <th>Date soumission</th>
+                                    <th>Statut</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                    @for (insc of filteredInscriptions(); track insc.id) {
+                                        <tr class="clickable" (click)="showDetails(insc)">
+                                            <td>
+                                                <div class="user-cell">
+                                                    <div class="user-avatar blue">{{ getInitials(insc) }}</div>
+                                                    <div class="user-info">
+                                                        <span class="user-name">{{ getDoctorantName(insc) }}</span>
+                                                        <span class="user-id">Mat: {{ insc.doctorant?.username || 'N/A' }}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex flex-column">
+                                                    <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ getDirecteurName(insc) }}</span>
+                                                </div>
+                                            </td>
+                                            <td><span class="badge year">{{ insc.anneeInscription }}ème</span></td>
+                                            <td><div class="motif-cell" [title]="insc.sujetThese">{{ truncate(insc.sujetThese) }}</div></td>
+                                            <td><span class="date-badge">{{ insc.createdAt | date:'dd/MM/yyyy' }}</span></td>
+                                            <td>
+                                                <!-- ✅ Utilisation de insc.statut au lieu de insc.etat -->
+                                                <span class="status-badge" [ngClass]="getStatusClass(insc.statut)">
+                                                    <i class="bi" [ngClass]="getStatusIcon(insc.statut)"></i>
+                                                    {{ formatStatus(insc.statut) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 }
 
-                <!-- Empty State -->
-                @if (!isLoading() && inscriptions().length === 0) {
-                    <div class="empty-state">
-                        <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-                        <h3>Aucune demande en attente</h3>
-                        <p>Aucune réinscription à valider pour le moment.</p>
-                    </div>
-                }
+                <!-- MODAL DÉTAILS -->
+                @if (selectedInscription()) {
+                    <div class="modal-overlay" (click)="closeDetails()">
+                        <div class="modal-content" (click)="$event.stopPropagation()">
+                            <div class="modal-header">
+                                <h3><i class="bi bi-file-earmark-text"></i> Détails Réinscription #{{ selectedInscription().id }}</h3>
+                                <button class="btn-close" (click)="closeDetails()"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                            <div class="modal-body">
 
-                <!-- Liste des demandes -->
-                @if (!isLoading() && inscriptions().length > 0) {
-                    <div class="inscriptions-list">
-                        @for (inscription of inscriptions(); track inscription.id) {
-                            <div class="inscription-card">
-                                <div class="card-header">
-                                    <div class="doctorant-info">
-                                        <div class="avatar">{{ getInitials(inscription) }}</div>
-                                        <div class="info">
-                                            <h4>{{ getDoctorantName(inscription) }}</h4>
-                                            <span class="matricule">{{ inscription.doctorant?.username || 'N/A' }}</span>
-                                        </div>
+                                <!-- WORKFLOW -->
+                                <div class="workflow-container">
+                                    <!-- 1. Soumission -->
+                                    <div class="step completed">
+                                        <div class="step-circle"><i class="bi bi-check-lg"></i></div>
+                                        <span class="step-label">Soumission</span>
                                     </div>
-                                    <div class="card-badges">
-                                        <span class="badge type reinscription">Réinscription</span>
-                                        @if (inscription.anneeInscription) {
-                                            <span class="badge year">{{ inscription.anneeInscription }}ème année</span>
-                                        }
-                                        <span class="badge status pending">En attente Admin</span>
+                                    <div class="step-line" [class.active]="getWorkflowStep(selectedInscription()) >= 2"></div>
+
+                                    <!-- 2. Admin -->
+                                    <div class="step" [ngClass]="getStepClass(selectedInscription(), 2)">
+                                        <div class="step-circle">
+                                            @if(getWorkflowStep(selectedInscription()) > 2) { <i class="bi bi-check-lg"></i> }
+                                            @else if(getWorkflowStep(selectedInscription()) === 2) { <i class="bi bi-building"></i> }
+                                            @else { <i class="bi bi-building"></i> }
+                                        </div>
+                                        <span class="step-label">Administration</span>
+                                    </div>
+                                    <div class="step-line" [class.active]="getWorkflowStep(selectedInscription()) >= 3"></div>
+
+                                    <!-- 3. Directeur -->
+                                    <div class="step" [ngClass]="getStepClass(selectedInscription(), 3)">
+                                        <div class="step-circle">
+                                            @if(getWorkflowStep(selectedInscription()) > 3) { <i class="bi bi-check-lg"></i> }
+                                            @else if(getWorkflowStep(selectedInscription()) === 3) { <i class="bi bi-person-badge"></i> }
+                                            @else { <i class="bi bi-person-badge"></i> }
+                                        </div>
+                                        <span class="step-label">Directeur</span>
                                     </div>
                                 </div>
 
-                                <div class="card-body">
-                                    <div class="info-grid">
-                                        <div class="info-item">
-                                            <span class="label"><i class="bi bi-journal-text"></i> Sujet de thèse</span>
-                                            <span class="value">{{ inscription.sujetThese || 'Non défini' }}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="label"><i class="bi bi-building"></i> Laboratoire</span>
-                                            <span class="value">{{ inscription.laboratoireAccueil || 'Non défini' }}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="label"><i class="bi bi-person-badge"></i> Directeur</span>
-                                            <span class="value">{{ getDirecteurName(inscription) }}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="label"><i class="bi bi-calendar3"></i> Date de soumission</span>
-                                            <span class="value">{{ inscription.createdAt | date:'dd MMM yyyy' }}</span>
-                                        </div>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Doctorant</label>
+                                        <span class="value">{{ getDoctorantName(selectedInscription()) }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Laboratoire</label>
+                                        <span class="value">{{ selectedInscription().laboratoireAccueil || 'Non renseigné' }}</span>
+                                    </div>
+                                    <div class="detail-item full-width">
+                                        <label>Sujet de Thèse</label>
+                                        <div class="motif-box">{{ selectedInscription().sujetThese || 'Aucun sujet défini' }}</div>
                                     </div>
 
-                                    <!-- Commentaire du directeur -->
-                                    @if (inscription.commentaireDirecteur) {
-                                        <div class="directeur-comment">
-                                            <i class="bi bi-chat-left-quote"></i>
-                                            <div>
-                                                <span class="comment-label">Commentaire du directeur</span>
-                                                <p>{{ inscription.commentaireDirecteur }}</p>
-                                            </div>
-                                        </div>
-                                    }
-
-                                    <!-- Prérequis du doctorant -->
-                                    @if (inscription.doctorant) {
-                                        <div class="prereq-section">
-                                            <h5><i class="bi bi-list-check"></i> Prérequis du doctorant</h5>
-                                            <div class="prereq-grid">
-                                                <div class="prereq-item" [class.complete]="(inscription.doctorant.nbPublications || 0) >= 2">
-                                                    <span class="prereq-label">Publications</span>
-                                                    <span class="prereq-value">{{ inscription.doctorant.nbPublications || 0 }}/2</span>
-                                                </div>
-                                                <div class="prereq-item" [class.complete]="(inscription.doctorant.nbConferences || 0) >= 2">
-                                                    <span class="prereq-label">Conférences</span>
-                                                    <span class="prereq-value">{{ inscription.doctorant.nbConferences || 0 }}/2</span>
-                                                </div>
-                                                <div class="prereq-item" [class.complete]="(inscription.doctorant.heuresFormation || 0) >= 200">
-                                                    <span class="prereq-label">Formation</span>
-                                                    <span class="prereq-value">{{ inscription.doctorant.heuresFormation || 0 }}/200h</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-
-                                <div class="card-actions">
-                                    <div class="comment-input">
-                                        <input type="text" [(ngModel)]="commentaires[inscription.id]"
-                                               placeholder="Ajouter un commentaire (optionnel)">
-                                    </div>
-                                    <div class="action-buttons">
-                                        <button class="btn-reject" (click)="rejeter(inscription)" [disabled]="isProcessing()">
-                                            <i class="bi bi-x-lg"></i> Rejeter
-                                        </button>
-                                        <button class="btn-approve" (click)="valider(inscription)" [disabled]="isProcessing()">
-                                            @if (isProcessing()) {
-                                                <span class="spinner"></span>
-                                            } @else {
-                                                <i class="bi bi-check-lg"></i>
-                                            }
-                                            Valider
-                                        </button>
+                                    <div class="detail-item full-width">
+                                        <label>Directeur de Thèse</label>
+                                        <span class="value fw-bold text-primary">{{ getDirecteurName(selectedInscription()) }}</span>
                                     </div>
                                 </div>
                             </div>
-                        }
+
+                            @if (selectedInscription().statut === 'EN_ATTENTE_ADMIN') {
+                                <div class="modal-footer">
+                                    <button class="btn-refuse" (click)="rejeter(selectedInscription())">Rejeter</button>
+                                    <button class="btn-accept" (click)="valider(selectedInscription())">Valider (Envoyer au Directeur)</button>
+                                </div>
+                            }
+                        </div>
                     </div>
                 }
 
@@ -167,100 +205,106 @@ import { UserService } from '@core/services/user.service';
         </app-main-layout>
     `,
     styles: [`
-      .page-container { max-width: 1000px; margin: 0 auto; padding: 0 1.5rem 3rem; }
-
-      .hero-section { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+      .page-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+      .hero-section { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; color: white; }
       .hero-content { display: flex; align-items: center; gap: 1.25rem; }
-      .hero-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: white; }
-      .hero-title { color: white; font-size: 1.6rem; font-weight: 800; margin: 0; }
-      .hero-subtitle { color: rgba(255,255,255,0.9); margin: 0.25rem 0 0; }
-      .hero-stats { display: flex; gap: 1.5rem; }
-      .hero-stat { text-align: center; padding: 0.75rem 1.5rem; background: rgba(255,255,255,0.15); border-radius: 12px; }
-      .stat-number { display: block; font-size: 2rem; font-weight: 800; color: white; }
-      .stat-label { font-size: 0.8rem; color: rgba(255,255,255,0.8); }
+      .hero-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; }
+      .hero-title { margin: 0; font-size: 1.6rem; font-weight: 800; }
+      .hero-subtitle { margin: 0.25rem 0 0; opacity: 0.9; }
+      .btn-refresh { padding: 0.75rem 1.25rem; background: white; color: #1d4ed8; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
+      .btn-refresh:hover { transform: translateY(-2px); }
+      .spinner { width: 16px; height: 16px; border: 2px solid #dbeafe; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
-      .info-banner { display: flex; gap: 1rem; padding: 1.25rem; background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #93c5fd; border-radius: 16px; margin-bottom: 1.5rem; }
-      .info-icon { width: 44px; height: 44px; background: #3b82f6; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; }
-      .info-content { color: #1e40af; }
-      .info-content strong { display: block; margin-bottom: 0.25rem; }
-      .info-content p { margin: 0; font-size: 0.875rem; }
+      .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+      .stat-card { background: white; border-radius: 16px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; }
+      .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+      .stat-card.orange .stat-icon { background: #fff7ed; color: #ea580c; }
+      .stat-card.blue .stat-icon { background: #eff6ff; color: #3b82f6; }
+      .stat-card.green .stat-icon { background: #ecfdf5; color: #16a34a; }
+      .stat-card.red .stat-icon { background: #fef2f2; color: #dc2626; }
+      .stat-value { font-size: 1.5rem; font-weight: 700; color: #1e293b; display: block; }
+      .stat-label { font-size: 0.8rem; color: #64748b; }
 
-      .loading-state { display: flex; flex-direction: column; align-items: center; padding: 4rem; color: #64748b; gap: 1rem; }
-      .loading-spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
-      @keyframes spin { to { transform: rotate(360deg); } }
+      .tabs-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+      .tabs { background: #f1f5f9; padding: 5px; border-radius: 50px; display: inline-flex; gap: 5px; }
+      .tab-btn { border: none; background: transparent; padding: 0.75rem 1.5rem; border-radius: 40px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; }
+      .tab-btn.active { background: white; color: #1d4ed8; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .tab-badge { background: #ef4444; color: white; padding: 0.15rem 0.5rem; border-radius: 50px; font-size: 0.75rem; }
+      .tab-badge.info { background: #3b82f6; }
 
-      .empty-state { text-align: center; padding: 4rem 2rem; background: white; border-radius: 20px; border: 1px solid #e2e8f0; }
-      .empty-icon { width: 80px; height: 80px; background: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
-      .empty-icon i { font-size: 2.5rem; color: #3b82f6; }
-      .empty-state h3 { margin: 0 0 0.5rem; color: #1e293b; }
-      .empty-state p { margin: 0; color: #64748b; }
+      .section-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 1.5rem; }
+      .table-container { overflow-x: auto; }
+      .data-table { width: 100%; border-collapse: collapse; }
+      .data-table th { padding: 1rem 1.25rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+      .data-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+      .data-table tbody tr { transition: background 0.2s; cursor: pointer; }
+      .data-table tbody tr:hover { background: #f0f9ff; }
 
-      .inscriptions-list { display: flex; flex-direction: column; gap: 1.25rem; }
+      .user-cell { display: flex; align-items: center; gap: 0.75rem; }
+      .user-avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: white; }
+      .user-avatar.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+      .user-info { display: flex; flex-direction: column; }
+      .user-name { font-weight: 600; color: #1e293b; }
+      .user-id { font-size: 0.8rem; color: #64748b; }
 
-      .inscription-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; }
+      .badge.year { background: #dbeafe; color: #1e40af; padding: 0.3rem 0.7rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+      .motif-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; }
 
-      .card-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 1rem; }
-      .doctorant-info { display: flex; align-items: center; gap: 1rem; }
-      .avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem; }
-      .doctorant-info .info h4 { margin: 0; font-size: 1.1rem; color: #1e293b; }
-      .matricule { font-size: 0.85rem; color: #64748b; font-family: monospace; }
-      .card-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-      .badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
-      .badge.type { background: #f1f5f9; color: #475569; }
-      .badge.type.reinscription { background: #f3e8ff; color: #7c3aed; }
-      .badge.year { background: #dbeafe; color: #2563eb; }
-      .badge.status.pending { background: #fef3c7; color: #b45309; }
+      .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; }
+      .status-badge.pending { background: #fef3c7; color: #b45309; }
+      .status-badge.director { background: #dbeafe; color: #1d4ed8; }
+      .status-badge.valid { background: #dcfce7; color: #15803d; }
+      .status-badge.rejected { background: #fee2e2; color: #dc2626; }
 
-      .card-body { padding: 1.5rem; }
-      .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-      .info-item { display: flex; flex-direction: column; gap: 0.25rem; }
-      .info-item .label { font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 0.35rem; }
-      .info-item .value { font-size: 0.95rem; font-weight: 500; color: #1e293b; }
-
-      .directeur-comment { display: flex; gap: 0.75rem; margin-top: 1.5rem; padding: 1rem; background: #f0fdf4; border-radius: 12px; border-left: 4px solid #22c55e; }
-      .directeur-comment i { color: #22c55e; font-size: 1.25rem; flex-shrink: 0; }
-      .comment-label { display: block; font-size: 0.75rem; color: #166534; font-weight: 600; margin-bottom: 0.25rem; }
-      .directeur-comment p { margin: 0; color: #166534; font-size: 0.9rem; }
-
-      .prereq-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
-      .prereq-section h5 { margin: 0 0 1rem; font-size: 0.9rem; color: #475569; display: flex; align-items: center; gap: 0.5rem; }
-      .prereq-grid { display: flex; gap: 1rem; }
-      .prereq-item { flex: 1; padding: 0.75rem 1rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center; }
-      .prereq-item.complete { background: #f0fdf4; border-color: #86efac; }
-      .prereq-label { display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem; }
-      .prereq-value { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
-      .prereq-item.complete .prereq-value { color: #16a34a; }
-
-      .card-actions { display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; }
-      .comment-input input { width: 100%; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; outline: none; }
-      .comment-input input:focus { border-color: #3b82f6; }
-      .action-buttons { display: flex; gap: 0.75rem; }
-      .btn-reject, .btn-approve { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.875rem 1.25rem; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-      .btn-reject { background: #fee2e2; color: #dc2626; }
-      .btn-reject:hover { background: #fecaca; }
-      .btn-approve { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; box-shadow: 0 4px 15px rgba(34,197,94,0.35); }
-      .btn-approve:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,197,94,0.45); }
-      .btn-approve:disabled, .btn-reject:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-      .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+      .loading-state, .empty-state { padding: 4rem; text-align: center; color: #64748b; }
+      .empty-icon { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 1rem; }
 
       .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 1000; }
       .toast.success { background: #22c55e; color: white; }
       .toast.error { background: #ef4444; color: white; }
 
-      @media (max-width: 768px) {
-        .hero-section { flex-direction: column; gap: 1.5rem; text-align: center; }
-        .hero-content { flex-direction: column; }
-        .info-grid { grid-template-columns: 1fr; }
-        .prereq-grid { flex-direction: column; }
-        .action-buttons { flex-direction: column; }
-      }
+      /* Modal Specifics */
+      .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
+      .modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.25); animation: slideUp 0.3s; }
+      .modal-header { padding: 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fcfcfc; }
+      .modal-header h3 { margin: 0; font-size: 1.2rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; }
+      .btn-close { border: none; background: transparent; font-size: 1.25rem; color: #64748b; cursor: pointer; }
+
+      .modal-body { padding: 2rem; }
+
+      .workflow-container { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; }
+      .step { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; width: 100px; text-align: center; }
+      .step-circle { width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 0.5rem; transition: all 0.3s; border: 4px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+      .step-label { font-size: 0.75rem; font-weight: 600; color: #64748b; }
+
+      .step.completed .step-circle { background: #22c55e; color: white; }
+      .step.current .step-circle { background: #3b82f6; color: white; animation: pulse 2s infinite; }
+
+      .step-line { flex: 1; height: 3px; background: #e2e8f0; margin-top: -25px; position: relative; z-index: 1; }
+      .step-line.active { background: #22c55e; }
+
+      .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+      .detail-item { display: flex; flex-direction: column; gap: 0.4rem; }
+      .detail-item.full-width { grid-column: 1 / -1; }
+      .detail-item label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+      .detail-item .value { font-size: 1rem; color: #1e293b; font-weight: 500; }
+      .motif-box { background: #fefce8; padding: 1rem; border-radius: 8px; border: 1px solid #fef08a; color: #854d0e; line-height: 1.5; font-size: 0.95rem; }
+
+      .modal-footer { padding: 1.5rem; border-top: 1px solid #e2e8f0; display: flex; gap: 1rem; justify-content: flex-end; background: #fcfcfc; }
+      .btn-accept, .btn-refuse { padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; }
+      .btn-accept { background: #22c55e; color: white; }
+      .btn-refuse { background: #fff; border: 1px solid #ef4444; color: #ef4444; }
+
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
     `]
 })
 export class AdminReinscriptionsComponent implements OnInit {
     inscriptions = signal<any[]>([]);
     isLoading = signal(true);
-    isProcessing = signal(false);
-    commentaires: { [key: number]: string } = {};
+    activeTab = 'EN_ATTENTE_ADMIN';
+    selectedInscription = signal<any>(null);
     toast = signal<{show: boolean, message: string, type: 'success' | 'error'}>({show: false, message: '', type: 'success'});
 
     constructor(
@@ -268,14 +312,11 @@ export class AdminReinscriptionsComponent implements OnInit {
         private userService: UserService
     ) {}
 
-    ngOnInit(): void {
-        this.loadData();
-    }
+    ngOnInit(): void { this.loadData(); }
 
     loadData(): void {
         this.isLoading.set(true);
-        // Charger uniquement les réinscriptions en attente admin
-        this.inscriptionService.getReinscritionsEnAttenteAdmin().subscribe({
+        this.inscriptionService.getAllInscriptions().subscribe({
             next: (data) => this.enrichWithUserInfo(data),
             error: (err) => {
                 console.error('Erreur:', err);
@@ -284,111 +325,131 @@ export class AdminReinscriptionsComponent implements OnInit {
         });
     }
 
-    enrichWithUserInfo(inscriptions: any[]): void {
-        if (inscriptions.length === 0) {
-            this.inscriptions.set([]);
-            this.isLoading.set(false);
-            return;
-        }
+    enrichWithUserInfo(data: any[]): void {
+        if (data.length === 0) { this.inscriptions.set([]); this.isLoading.set(false); return; }
 
         let loaded = 0;
-        inscriptions.forEach(inscription => {
-            // Charger info doctorant
-            if (inscription.doctorantId) {
-                this.userService.getUserById(inscription.doctorantId).subscribe({
-                    next: (user) => {
-                        inscription.doctorant = user;
-                        this.checkLoaded(++loaded, inscriptions.length, inscriptions);
-                    },
-                    error: () => this.checkLoaded(++loaded, inscriptions.length, inscriptions)
+        data.forEach(insc => {
+            if (insc.doctorantId) {
+                this.userService.getUserById(insc.doctorantId).subscribe({
+                    next: (u) => { insc.doctorant = u; this.checkLoaded(++loaded, data.length * 2, data); },
+                    error: () => this.checkLoaded(++loaded, data.length * 2, data)
                 });
-            } else {
-                this.checkLoaded(++loaded, inscriptions.length, inscriptions);
-            }
+            } else this.checkLoaded(++loaded, data.length * 2, data);
 
-            // Charger info directeur
-            if (inscription.directeurId) {
-                this.userService.getUserById(inscription.directeurId).subscribe({
-                    next: (user) => inscription.directeur = user,
-                    error: () => {}
+            if (insc.directeurId) {
+                this.userService.getUserById(insc.directeurId).subscribe({
+                    next: (u) => { insc.directeur = u; this.checkLoaded(++loaded, data.length * 2, data); },
+                    error: () => this.checkLoaded(++loaded, data.length * 2, data)
                 });
-            }
+            } else this.checkLoaded(++loaded, data.length * 2, data);
         });
     }
 
-    checkLoaded(loaded: number, total: number, inscriptions: any[]): void {
-        if (loaded === total) {
-            this.inscriptions.set(inscriptions);
+    checkLoaded(loaded: number, total: number, data: any[]) {
+        if (loaded >= total - 1) {
+            this.inscriptions.set(data);
             this.isLoading.set(false);
         }
     }
 
-    getDoctorantName(inscription: any): string {
-        if (inscription.doctorant) {
-            return `${inscription.doctorant.prenom || ''} ${inscription.doctorant.nom || ''}`.trim() || 'Doctorant';
-        }
-        return 'Doctorant';
+    setTab(tab: string) { this.activeTab = tab; }
+
+    // ✅ CORRECTION MAJEURE : Remplacement de i.etat par i.statut
+    filteredInscriptions(): any[] {
+        const all = this.inscriptions();
+        if (this.activeTab === 'EN_ATTENTE_ADMIN') return all.filter(i => i.statut === 'EN_ATTENTE_ADMIN');
+        if (this.activeTab === 'EN_ATTENTE_DIRECTEUR') return all.filter(i => i.statut === 'EN_ATTENTE_DIRECTEUR');
+        return all.filter(i => i.statut === 'ADMIS' || (i.statut && i.statut.includes('REJETE')));
     }
 
-    getDirecteurName(inscription: any): string {
-        if (inscription.directeur) {
-            return `${inscription.directeur.prenom || ''} ${inscription.directeur.nom || ''}`.trim();
-        }
-        return inscription.directeurId ? `ID: ${inscription.directeurId}` : 'Non assigné';
+    // ✅ CORRECTION MAJEURE : Remplacement de i.etat par i.statut
+    getCount(type: string): number {
+        const all = this.inscriptions();
+        if (type === 'EN_ATTENTE_ADMIN') return all.filter(i => i.statut === 'EN_ATTENTE_ADMIN').length;
+        if (type === 'EN_ATTENTE_DIRECTEUR') return all.filter(i => i.statut === 'EN_ATTENTE_DIRECTEUR').length;
+        if (type === 'ADMIS') return all.filter(i => i.statut === 'ADMIS').length;
+        if (type === 'REJETE') return all.filter(i => i.statut && i.statut.includes('REJETE')).length;
+        return 0;
     }
 
-    getInitials(inscription: any): string {
-        if (inscription.doctorant) {
-            return ((inscription.doctorant.prenom?.charAt(0) || '') + (inscription.doctorant.nom?.charAt(0) || '')).toUpperCase() || '?';
-        }
-        return '?';
+    getDoctorantName(insc: any) { return insc.doctorant ? `${insc.doctorant.prenom} ${insc.doctorant.nom}` : 'Inconnu'; }
+    getDirecteurName(insc: any) { return insc.directeur ? `${insc.directeur.prenom} ${insc.directeur.nom}` : (insc.directeurId ? `ID: ${insc.directeurId}` : 'Non assigné'); }
+    getInitials(insc: any) { return (insc.doctorant?.prenom?.charAt(0) || '') + (insc.doctorant?.nom?.charAt(0) || ''); }
+    truncate(text: string) { return text && text.length > 30 ? text.substring(0, 30) + '...' : text; }
+
+    // ✅ CORRECTION : Utilisation de statut
+    getStatusClass(statut: string) {
+        if (!statut) return '';
+        if (statut === 'EN_ATTENTE_ADMIN') return 'pending';
+        if (statut === 'EN_ATTENTE_DIRECTEUR') return 'director';
+        if (statut === 'ADMIS') return 'valid';
+        return 'rejected';
     }
 
-    valider(inscription: any): void {
-        this.isProcessing.set(true);
-        const commentaire = this.commentaires[inscription.id] || '';
+    getStatusIcon(statut: string) {
+        if (!statut) return '';
+        if (statut === 'EN_ATTENTE_ADMIN') return 'bi-hourglass-split';
+        if (statut === 'EN_ATTENTE_DIRECTEUR') return 'bi-person-badge';
+        if (statut === 'ADMIS') return 'bi-check-circle-fill';
+        return 'bi-x-circle-fill';
+    }
 
-        this.inscriptionService.validerParAdmin(inscription.id, commentaire).subscribe({
-            next: () => {
-                this.showToast('Réinscription validée avec succès', 'success');
-                this.isProcessing.set(false);
+    formatStatus(statut: string) {
+        if (!statut) return 'Inconnu';
+        if (statut === 'EN_ATTENTE_ADMIN') return 'À traiter';
+        if (statut === 'EN_ATTENTE_DIRECTEUR') return 'Chez Directeur';
+        if (statut === 'ADMIS') return 'Validée';
+        if (statut.includes('REJETE')) return 'Refusée';
+        return statut;
+    }
+
+    getEmptyIcon() { return this.activeTab === 'EN_ATTENTE_ADMIN' ? 'bi-hourglass' : this.activeTab === 'EN_ATTENTE_DIRECTEUR' ? 'bi-person-badge' : 'bi-clock-history'; }
+    getEmptyTitle() { return this.activeTab === 'EN_ATTENTE_ADMIN' ? 'Tout est à jour' : this.activeTab === 'EN_ATTENTE_DIRECTEUR' ? 'Aucun dossier' : 'Historique vide'; }
+    getEmptyMessage() { return 'Aucune demande correspondante trouvée.'; }
+
+    showDetails(insc: any) { this.selectedInscription.set(insc); }
+    closeDetails() { this.selectedInscription.set(null); }
+
+    // ✅ CORRECTION : Utilisation de statut
+    getWorkflowStep(insc: any): number {
+        if (!insc || !insc.statut) return 1;
+        if (insc.statut === 'EN_ATTENTE_ADMIN') return 2;
+        if (insc.statut === 'EN_ATTENTE_DIRECTEUR') return 3;
+        if (insc.statut === 'ADMIS') return 4;
+        return 1;
+    }
+
+    getStepClass(insc: any, step: number) {
+        const current = this.getWorkflowStep(insc);
+        if(current > step) return 'completed';
+        if(current === step) return 'current';
+        return '';
+    }
+
+    valider(insc: any) {
+        if(confirm('Valider cette réinscription ?')) {
+            this.inscriptionService.validerParAdmin(insc.id, 'OK').subscribe(() => {
+                this.showToast('Réinscription validée', 'success');
                 this.loadData();
-            },
-            error: (err) => {
-                console.error('Erreur:', err);
-                this.showToast('Erreur lors de la validation', 'error');
-                this.isProcessing.set(false);
-            }
-        });
+                this.closeDetails();
+            });
+        }
     }
 
-    rejeter(inscription: any): void {
-        const motif = this.commentaires[inscription.id];
-        if (!motif || motif.trim() === '') {
-            this.showToast('Veuillez indiquer un motif de refus', 'error');
-            return;
-        }
-
-        if (!confirm('Êtes-vous sûr de vouloir rejeter cette demande ?')) return;
-
-        this.isProcessing.set(true);
-
-        this.inscriptionService.rejeterParAdmin(inscription.id, motif).subscribe({
-            next: () => {
+    rejeter(insc: any) {
+        const m = prompt('Motif du refus :');
+        if(m) {
+            this.inscriptionService.rejeterParAdmin(insc.id, m).subscribe(() => {
                 this.showToast('Demande rejetée', 'success');
-                this.isProcessing.set(false);
                 this.loadData();
-            },
-            error: (err) => {
-                console.error('Erreur:', err);
-                this.showToast('Erreur lors du rejet', 'error');
-                this.isProcessing.set(false);
-            }
-        });
+                this.closeDetails();
+            });
+        }
     }
 
-    showToast(message: string, type: 'success' | 'error'): void {
+    showToast(message: string, type: 'success' | 'error') {
         this.toast.set({show: true, message, type});
-        setTimeout(() => this.toast.set({show: false, message: '', type: 'success'}), 4000);
+        setTimeout(() => this.toast.set({show: false, message: '', type: 'success'}), 3000);
     }
 }

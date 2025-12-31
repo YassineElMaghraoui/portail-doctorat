@@ -67,6 +67,11 @@ export const routes: Routes = [
   // DIRECTEUR DE THÈSE
   // ============================================
   {
+    path: 'director/my-students',
+    loadComponent: () => import('./features/directeur/my-students/my-students.component').then(m => m.MyStudentsComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'validations',
     loadComponent: () => import('./features/directeur/validation/director-validation.component').then(m => m.DirectorValidationComponent),
     canActivate: [authGuard]
@@ -115,31 +120,31 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/derogation-management/derogation-management.component').then(m => m.DerogationManagementComponent),
     canActivate: [authGuard]
   },
+
+  // ✅ CORRECTION ICI : Remplacement de SoutenanceListComponent par AdminSoutenanceComponent
   {
     path: 'admin/soutenances',
-    loadComponent: () => import('./features/admin/soutenance-list/soutenance-list.component').then(m => m.SoutenanceListComponent),
+    loadComponent: () => import('./features/admin/soutenance-list/soutenance-list.component').then(m => m.AdminSoutenanceComponent),
     canActivate: [authGuard]
   },
+
   {
     path: 'admin/soutenances/:id',
     loadComponent: () => import('./features/admin/soutenance-detail/soutenance-detail.component').then(m => m.SoutenanceDetailComponent),
     canActivate: [authGuard]
   },
 
-  // ✅ AJOUTÉ: Route pour créer un nouveau directeur (AVANT admin/users)
   {
     path: 'admin/users/new-director',
     loadComponent: () => import('./features/admin/new-director/new-director.component').then(m => m.NewDirectorComponent),
     canActivate: [authGuard]
   },
 
-  // Gestion des utilisateurs
   {
     path: 'admin/users',
     loadComponent: () => import('./features/admin/user-management/user-management.component').then(m => m.UserManagementComponent),
     canActivate: [authGuard]
   },
 
-  // Catch-all (Redirection si page inconnue)
   { path: '**', redirectTo: '/dashboard' }
 ];

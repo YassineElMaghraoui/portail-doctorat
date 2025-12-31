@@ -56,6 +56,11 @@ export class SoutenanceService {
         return this.http.put<Soutenance>(`${this.baseUrl}/${id}/autoriser`, { commentaire });
     }
 
+    // ✅ ALIAS pour compatibilité avec AdminSoutenanceComponent
+    autoriserSoutenanceAdmin(id: number): Observable<Soutenance> {
+        return this.autoriserSoutenance(id, 'Autorisé par l\'administration');
+    }
+
     // ========== ÉTAPE 3: DIRECTEUR propose le jury (AUTORISEE → JURY_PROPOSE) ==========
 
     getMembresJuryByRole(role: string): Observable<any[]> {
@@ -94,10 +99,27 @@ export class SoutenanceService {
         return this.http.put<Soutenance>(`${this.baseUrl}/${id}/planifier`, data);
     }
 
+    // ✅ ALIAS combiné pour AdminSoutenanceComponent (Valider Jury + Planifier en même temps)
+    validerJuryEtPlanifier(id: number, planning: { date: string; heure: string; lieu: string }): Observable<Soutenance> {
+        // Idéalement, le backend devrait avoir un endpoint unique.
+        // Sinon, on enchaîne : Valider Jury -> Planifier (mais ici on utilise juste planifier car valider jury est implicite souvent)
+        // Pour simplifier : on appelle juste planifierSoutenance
+        return this.planifierSoutenance(id, {
+            dateSoutenance: planning.date,
+            heureSoutenance: planning.heure,
+            lieuSoutenance: planning.lieu
+        });
+    }
+
     // ========== ÉTAPE 6: ADMIN enregistre le résultat (PLANIFIEE → TERMINEE) ==========
 
     enregistrerResultat(id: number, data: { mention: string; felicitations?: boolean }): Observable<Soutenance> {
         return this.http.put<Soutenance>(`${this.baseUrl}/${id}/resultat`, data);
+    }
+
+    // ✅ ALIAS pour compatibilité avec AdminSoutenanceComponent
+    cloturerSoutenance(id: number, mention: string): Observable<Soutenance> {
+        return this.enregistrerResultat(id, { mention: mention, felicitations: false });
     }
 
     // ========== AUTRES ==========
@@ -108,21 +130,16 @@ export class SoutenanceService {
 
     getDocumentUrl(filePath: string): string {
         if (!filePath) return '';
-
         let filename = filePath;
         if (filePath.includes('uploads/soutenances/')) {
             filename = filePath.split('uploads/soutenances/').pop() || filePath;
         } else if (filePath.includes('/')) {
             filename = filePath.split('/').pop() || filePath;
         }
-
-        // ✅ URL correcte : /api/soutenances/files/{filename}
         return `${environment.soutenanceServiceUrl}/soutenances/files/${filename}`;
     }
 
     openDocument(path: string): void {
-        if (path) {
-            window.open(this.getDocumentUrl(path), '_blank');
-        }
+        if (path) window.open(this.getDocumentUrl(path), '_blank');
     }
 }

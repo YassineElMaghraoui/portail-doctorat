@@ -35,6 +35,15 @@ import { Role } from '@core/models/user.model';
             <!-- ======================================================= -->
             @if (isDirecteur()) {
               <li class="nav-section">Gestion Académique</li>
+
+              <!-- ✅ Mes Doctorants EN PREMIER -->
+              <li>
+                <a routerLink="/director/my-students" routerLinkActive="active">
+                  <i class="bi bi-people-fill"></i>
+                  <span>Mes Doctorants</span>
+                </a>
+              </li>
+
               <li>
                 <a routerLink="/validations" routerLinkActive="active">
                   <i class="bi bi-file-earmark-check"></i>

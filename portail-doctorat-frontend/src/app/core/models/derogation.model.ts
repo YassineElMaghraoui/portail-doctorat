@@ -2,13 +2,13 @@ export interface Derogation {
   id: number;
   doctorantId: number;
   directeurId?: number;
-  typeDerogation: TypeDerogation;
-  statut: StatutDerogation;
+  typeDerogation: TypeDerogation; // Utilise le type union
+  statut: StatutDerogation;       // Utilise le type union
   motif: string;
   anneeDemandee: number;
 
   // Dates
-  dateDemande: string;
+  dateDemande: string; // ISO String
   dateValidationDirecteur?: string;
   dateDecision?: string;
   dateExpiration?: string;
@@ -44,7 +44,7 @@ export interface EligibiliteReinscription {
 
 export interface DemandeDerogationRequest {
   doctorantId: number;
-  directeurId?: number;  // Optionnel pour compatibilité avec l'ancien workflow
+  directeurId?: number;
   typeDerogation: TypeDerogation;
   motif: string;
 }
@@ -56,52 +56,19 @@ export interface DecisionDerogationRequest {
   commentaire?: string;
 }
 
-export enum TypeDerogation {
-  PROLONGATION_4EME_ANNEE = 'PROLONGATION_4EME_ANNEE',
-  PROLONGATION_5EME_ANNEE = 'PROLONGATION_5EME_ANNEE',
-  PROLONGATION_6EME_ANNEE = 'PROLONGATION_6EME_ANNEE',
-  SUSPENSION_TEMPORAIRE = 'SUSPENSION_TEMPORAIRE',
-  AUTRE = 'AUTRE'
-}
+// ✅ UTILISATION DE TYPE UNION (Plus souple pour le template)
+export type TypeDerogation =
+    | 'PROLONGATION_4EME_ANNEE'
+    | 'PROLONGATION_5EME_ANNEE'
+    | 'PROLONGATION_6EME_ANNEE'
+    | 'SUSPENSION_TEMPORAIRE'
+    | 'AUTRE';
 
-export enum StatutDerogation {
-  EN_ATTENTE_DIRECTEUR = 'EN_ATTENTE_DIRECTEUR',
-  EN_ATTENTE_ADMIN = 'EN_ATTENTE_ADMIN',
-  EN_ATTENTE = 'EN_ATTENTE',  // Legacy
-  APPROUVEE = 'APPROUVEE',
-  REFUSEE = 'REFUSEE',
-  EXPIREE = 'EXPIREE',
-  ANNULEE = 'ANNULEE'
-}
-
-// Helper pour obtenir l'étape du workflow
-export function getEtapeWorkflow(statut: StatutDerogation): number {
-  switch (statut) {
-    case StatutDerogation.EN_ATTENTE_DIRECTEUR:
-    case StatutDerogation.EN_ATTENTE:
-      return 1;
-    case StatutDerogation.EN_ATTENTE_ADMIN:
-      return 2;
-    case StatutDerogation.APPROUVEE:
-    case StatutDerogation.REFUSEE:
-    case StatutDerogation.EXPIREE:
-    case StatutDerogation.ANNULEE:
-      return 3;
-    default:
-      return 1;
-  }
-}
-
-// Helper pour obtenir le label du statut
-export function getStatutLabel(statut: StatutDerogation): string {
-  const labels: Record<string, string> = {
-    'EN_ATTENTE_DIRECTEUR': 'En attente (Directeur)',
-    'EN_ATTENTE_ADMIN': 'En attente (Admin)',
-    'EN_ATTENTE': 'En attente',
-    'APPROUVEE': 'Approuvée',
-    'REFUSEE': 'Refusée',
-    'EXPIREE': 'Expirée',
-    'ANNULEE': 'Annulée'
-  };
-  return labels[statut] || statut;
-}
+export type StatutDerogation =
+    | 'EN_ATTENTE_DIRECTEUR'
+    | 'EN_ATTENTE_ADMIN'
+    | 'EN_ATTENTE'
+    | 'APPROUVEE'
+    | 'REFUSEE'
+    | 'EXPIREE'
+    | 'ANNULEE';

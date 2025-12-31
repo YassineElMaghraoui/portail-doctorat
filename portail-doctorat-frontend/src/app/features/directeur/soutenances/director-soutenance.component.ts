@@ -30,230 +30,239 @@ interface JurySelection {
     template: `
         <app-main-layout>
             <div class="page-container">
-                <!-- HERO -->
-                <div class="hero-header">
+                <!-- HERO HEADER -->
+                <div class="hero-section">
                     <div class="hero-content">
                         <div class="hero-icon"><i class="bi bi-mortarboard-fill"></i></div>
-                        <div><h1 class="hero-title">Gestion des Soutenances</h1><p class="hero-subtitle">Validez les demandes et proposez le jury</p></div>
+                        <div>
+                            <h1 class="hero-title">Gestion des Soutenances</h1>
+                            <p class="hero-subtitle">Supervisez les thèses et validez les étapes académiques</p>
+                        </div>
                     </div>
                     <button class="btn-refresh" (click)="loadData()" [disabled]="isLoading()">
-                        @if (isLoading()) { <span class="spinner-btn"></span> } @else { <i class="bi bi-arrow-clockwise"></i> } Actualiser
+                        @if (isLoading()) { <span class="spinner-btn"></span> } @else { <i class="bi bi-arrow-clockwise"></i> }
+                        Actualiser
                     </button>
                 </div>
 
-                <!-- STATS -->
+                <!-- STATS CARDS -->
                 <div class="stats-grid">
-                    <div class="stat-card warning"><div class="stat-icon-wrap"><i class="bi bi-hourglass-split"></i></div><div class="stat-info"><span class="stat-value">{{ getPendingValidationCount() }}</span><span class="stat-label">À valider</span></div></div>
-                    <div class="stat-card success"><div class="stat-icon-wrap"><i class="bi bi-people-fill"></i></div><div class="stat-info"><span class="stat-value">{{ getJuryNeededCount() }}</span><span class="stat-label">Jury à proposer</span></div></div>
-                    <div class="stat-card info"><div class="stat-icon-wrap"><i class="bi bi-clock-history"></i></div><div class="stat-info"><span class="stat-value">{{ getWaitingAdminCount() }}</span><span class="stat-label">Attente admin</span></div></div>
-                    <div class="stat-card neutral"><div class="stat-icon-wrap"><i class="bi bi-collection-fill"></i></div><div class="stat-info"><span class="stat-value">{{ soutenances().length }}</span><span class="stat-label">Total</span></div></div>
+                    <div class="stat-card orange">
+                        <div class="stat-icon"><i class="bi bi-exclamation-circle-fill"></i></div>
+                        <div class="stat-info"><span class="stat-value">{{ getCount('TODO') }}</span><span class="stat-label">À traiter</span></div>
+                    </div>
+                    <div class="stat-card blue">
+                        <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                        <div class="stat-info"><span class="stat-value">{{ getCount('PENDING') }}</span><span class="stat-label">En cours (Admin)</span></div>
+                    </div>
+                    <div class="stat-card purple">
+                        <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
+                        <div class="stat-info"><span class="stat-value">{{ getCount('SCHEDULED') }}</span><span class="stat-label">Planifiées</span></div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+                        <div class="stat-info"><span class="stat-value">{{ getCount('HISTORY') }}</span><span class="stat-label">Terminées</span></div>
+                    </div>
                 </div>
 
-                @if (isLoading()) { <div class="loading-state"><div class="spinner-large"></div><p>Chargement...</p></div> }
-                @if (!isLoading() && soutenances().length === 0) { <div class="empty-state"><div class="empty-icon"><i class="bi bi-inbox"></i></div><h3>Aucune demande</h3></div> }
+                <!-- TABS -->
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <button class="tab-btn" [class.active]="activeTab === 'TODO'" (click)="setTab('TODO')">
+                            <i class="bi bi-lightning-charge-fill"></i> À traiter
+                            @if (getCount('TODO') > 0) { <span class="tab-badge">{{ getCount('TODO') }}</span> }
+                        </button>
+                        <button class="tab-btn" [class.active]="activeTab === 'PENDING'" (click)="setTab('PENDING')">
+                            <i class="bi bi-hourglass-split"></i> En attente Admin
+                            @if (getCount('PENDING') > 0) { <span class="tab-badge info">{{ getCount('PENDING') }}</span> }
+                        </button>
+                        <button class="tab-btn" [class.active]="activeTab === 'HISTORY'" (click)="setTab('HISTORY')">
+                            <i class="bi bi-clock-history"></i> Historique
+                        </button>
+                    </div>
+                </div>
 
-                @if (!isLoading() && soutenances().length > 0) {
-                    <div class="soutenances-section">
-                        <div class="section-header"><h3 class="section-title"><i class="bi bi-list-task"></i>Demandes</h3><span class="section-count">{{ soutenances().length }} dossier(s)</span></div>
-                        <div class="soutenances-list">
-                            @for (soutenance of soutenances(); track soutenance.id) {
-                                <div class="soutenance-card" [class.expanded]="expandedId() === soutenance.id" [attr.data-status]="soutenance.statut">
-                                    <div class="card-header" (click)="toggleExpand(soutenance.id)">
-                                        <div class="header-left">
-                                            <div class="status-indicator" [ngClass]="getStatusIndicatorClass(soutenance.statut)"><i class="bi" [ngClass]="getStatusIcon(soutenance.statut)"></i></div>
-                                            <div class="header-info">
-                                                <div class="header-top"><span class="doctorant-name">{{ getDoctorantName(soutenance) }}</span><span class="status-badge" [ngClass]="getStatusBadgeClass(soutenance.statut)">{{ formatStatus(soutenance.statut) }}</span></div>
-                                                <h4 class="thesis-title">{{ getThesisTitle(soutenance) }}</h4>
-                                                <div class="header-meta">
-                                                    <span class="meta-item"><i class="bi bi-calendar3"></i>{{ soutenance.createdAt | date:'dd MMM yyyy' }}</span>
-                                                    @if (needsDirectorAction(soutenance.statut)) { <span class="action-required"><i class="bi bi-exclamation-circle-fill"></i>{{ getActionNeededText(soutenance.statut) }}</span> }
+                <!-- LOADING & EMPTY -->
+                @if (isLoading()) { <div class="loading-state"><div class="spinner-large"></div><p>Chargement...</p></div> }
+                @if (!isLoading() && filteredSoutenances().length === 0) {
+                    <div class="section-card">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                            <h3>Aucun dossier</h3>
+                            <p>Rien à afficher dans cette catégorie pour le moment.</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- LISTE (Tableau/Cartes) -->
+                @if (!isLoading() && filteredSoutenances().length > 0) {
+                    <div class="soutenances-list">
+                        @for (soutenance of filteredSoutenances(); track soutenance.id) {
+                            <div class="soutenance-card" [class.expanded]="expandedId() === soutenance.id">
+
+                                <!-- HEADER (Toujours visible) -->
+                                <div class="card-header" (click)="toggleExpand(soutenance.id)">
+                                    <div class="user-identity">
+                                        <div class="avatar-circle">{{ getInitials(getDoctorantName(soutenance)) }}</div>
+                                        <div class="user-info">
+                                            <span class="name">{{ getDoctorantName(soutenance) }}</span>
+                                            <span class="title text-truncate" [title]="getThesisTitle(soutenance)">{{ getThesisTitle(soutenance) }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="meta-info d-none d-md-flex">
+                                        <span class="date"><i class="bi bi-calendar3"></i> {{ soutenance.createdAt | date:'dd/MM/yyyy' }}</span>
+                                    </div>
+
+                                    <div class="status-section">
+                                        <span class="status-badge" [ngClass]="getStatusBadgeClass(soutenance.statut)">
+                                            <i class="bi" [ngClass]="getStatusIcon(soutenance.statut)"></i>
+                                            {{ formatStatus(soutenance.statut) }}
+                                        </span>
+                                        <i class="bi bi-chevron-down expand-icon" [class.rotated]="expandedId() === soutenance.id"></i>
+                                    </div>
+                                </div>
+
+                                <!-- BODY (Expand) -->
+                                @if (expandedId() === soutenance.id) {
+                                    <div class="card-body">
+                                        <hr class="separator">
+
+                                        <!-- DETAILS & DOCUMENTS -->
+                                        <div class="detail-grid">
+                                            <!-- Section Prérequis -->
+                                            <div class="detail-box prerequis">
+                                                <h6><i class="bi bi-award"></i> État des Prérequis</h6>
+                                                <div class="prereq-items">
+                                                    <div class="p-item" [class.ok]="getPublications(soutenance) >= 2">
+                                                        <span>Publications</span>
+                                                        <strong>{{ getPublications(soutenance) }}/2</strong>
+                                                    </div>
+                                                    <div class="p-item" [class.ok]="getConferences(soutenance) >= 2">
+                                                        <span>Conférences</span>
+                                                        <strong>{{ getConferences(soutenance) }}/2</strong>
+                                                    </div>
+                                                    <div class="p-item" [class.ok]="getHeuresFormation(soutenance) >= 200">
+                                                        <span>Formation</span>
+                                                        <strong>{{ getHeuresFormation(soutenance) }}/200h</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Section Documents -->
+                                            <div class="detail-box documents">
+                                                <h6><i class="bi bi-folder2-open"></i> Documents</h6>
+                                                <div class="doc-list">
+                                                    <a [href]="getDocumentUrl(soutenance.cheminManuscrit)" target="_blank" class="doc-btn" [class.disabled]="!soutenance.cheminManuscrit">
+                                                        <i class="bi bi-file-earmark-pdf"></i> Manuscrit
+                                                    </a>
+                                                    <a [href]="getDocumentUrl(soutenance.cheminRapportAntiPlagiat)" target="_blank" class="doc-btn" [class.disabled]="!soutenance.cheminRapportAntiPlagiat">
+                                                        <i class="bi bi-shield-check"></i> Anti-Plagiat
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>
-                                        <button class="expand-btn" [class.rotated]="expandedId() === soutenance.id"><i class="bi bi-chevron-down"></i></button>
-                                    </div>
 
-                                    @if (expandedId() === soutenance.id) {
-                                        <div class="card-body">
-                                            <!-- PRÉREQUIS -->
-                                            <div class="detail-card prerequis-card">
-                                                <h5 class="detail-title"><i class="bi bi-award"></i>Prérequis Académiques</h5>
-                                                <div class="prerequis-grid">
-                                                    <div class="prereq-item" [class.valid]="getPublications(soutenance) >= 2">
-                                                        <div class="prereq-icon publications"><i class="bi bi-journal-richtext"></i></div>
-                                                        <div class="prereq-info"><span class="prereq-value">{{ getPublications(soutenance) }}</span><span class="prereq-label">Publications</span></div>
-                                                        <div class="prereq-status">@if (getPublications(soutenance) >= 2) { <i class="bi bi-check-circle-fill valid-icon"></i> } @else { <span class="prereq-target">min: 2</span> }</div>
+                                        <!-- ACTIONS : VALIDATION (SI STATUT = SOUMIS) -->
+                                        @if (soutenance.statut === 'SOUMIS') {
+                                            <div class="action-area mt-4">
+                                                <h5 class="action-title"><i class="bi bi-clipboard-check"></i> Votre Validation</h5>
+                                                @if (!showDecisionForm()) {
+                                                    <div class="d-flex gap-2 justify-content-end">
+                                                        <button class="btn-refuse" (click)="initiateRejection(soutenance.id, $event)">Demander corrections</button>
+                                                        <button class="btn-validate" (click)="initiateValidation(soutenance.id, $event)">Valider les prérequis</button>
                                                     </div>
-                                                    <div class="prereq-item" [class.valid]="getConferences(soutenance) >= 2">
-                                                        <div class="prereq-icon conferences"><i class="bi bi-mic-fill"></i></div>
-                                                        <div class="prereq-info"><span class="prereq-value">{{ getConferences(soutenance) }}</span><span class="prereq-label">Conférences</span></div>
-                                                        <div class="prereq-status">@if (getConferences(soutenance) >= 2) { <i class="bi bi-check-circle-fill valid-icon"></i> } @else { <span class="prereq-target">min: 2</span> }</div>
-                                                    </div>
-                                                    <div class="prereq-item" [class.valid]="getHeuresFormation(soutenance) >= 200">
-                                                        <div class="prereq-icon heures"><i class="bi bi-clock-history"></i></div>
-                                                        <div class="prereq-info"><span class="prereq-value">{{ getHeuresFormation(soutenance) }}h</span><span class="prereq-label">Formation</span></div>
-                                                        <div class="prereq-status">@if (getHeuresFormation(soutenance) >= 200) { <i class="bi bi-check-circle-fill valid-icon"></i> } @else { <span class="prereq-target">min: 200h</span> }</div>
-                                                    </div>
-                                                </div>
-                                                <div class="prereq-progress">
-                                                    <div class="progress-info"><span>Progression</span><span class="progress-pct">{{ calculatePrereqProgress(soutenance) }}%</span></div>
-                                                    <div class="progress-bar"><div class="progress-fill" [style.width.%]="calculatePrereqProgress(soutenance)" [class.complete]="calculatePrereqProgress(soutenance) >= 100"></div></div>
-                                                </div>
-                                            </div>
-
-                                            <!-- DOCUMENTS -->
-                                            <div class="detail-card">
-                                                <h5 class="detail-title"><i class="bi bi-folder2-open"></i>Documents</h5>
-                                                <div class="documents-grid">
-                                                    <a [href]="getDocumentUrl(soutenance.cheminManuscrit)" target="_blank" class="doc-link" [class.disabled]="!soutenance.cheminManuscrit">
-                                                        <div class="doc-icon manuscrit"><i class="bi bi-file-earmark-pdf"></i></div>
-                                                        <span class="doc-name">Manuscrit</span>
-                                                        <span class="doc-badge" [class.available]="soutenance.cheminManuscrit">{{ soutenance.cheminManuscrit ? 'Disponible' : 'Absent' }}</span>
-                                                    </a>
-                                                    <a [href]="getDocumentUrl(soutenance.cheminRapportAntiPlagiat)" target="_blank" class="doc-link" [class.disabled]="!soutenance.cheminRapportAntiPlagiat">
-                                                        <div class="doc-icon rapport"><i class="bi bi-shield-check"></i></div>
-                                                        <span class="doc-name">Anti-plagiat</span>
-                                                        <span class="doc-badge" [class.available]="soutenance.cheminRapportAntiPlagiat">{{ soutenance.cheminRapportAntiPlagiat ? 'Disponible' : 'Absent' }}</span>
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <!-- SOUMIS: Validation -->
-                                            @if (soutenance.statut === 'SOUMIS') {
-                                                <div class="detail-card action-card">
-                                                    <h5 class="detail-title"><i class="bi bi-clipboard-check"></i>Votre décision</h5>
-                                                    @if (!showDecisionForm() || currentSoutenanceId !== soutenance.id) {
-                                                        <div class="choice-grid">
-                                                            <button class="choice-card approve" (click)="initiateValidation(soutenance.id, $event)">
-                                                                <div class="choice-icon"><i class="bi bi-check-circle-fill"></i></div>
-                                                                <div class="choice-text"><strong>Valider</strong><span>Transmettre à l'admin</span></div>
+                                                } @else {
+                                                    <div class="decision-form" [class.approve]="decisionType() === 'validate'" [class.reject]="decisionType() === 'reject'">
+                                                        <p class="mb-2 fw-bold">
+                                                            {{ decisionType() === 'validate' ? 'Confirmer la validation des prérequis ?' : 'Motif des corrections :' }}
+                                                        </p>
+                                                        @if (decisionType() === 'reject') {
+                                                            <textarea [(ngModel)]="commentaire" class="form-control mb-2" rows="2" placeholder="Expliquez les corrections attendues..."></textarea>
+                                                        }
+                                                        <div class="d-flex gap-2 justify-content-end">
+                                                            <button class="btn-cancel" (click)="resetForms()">Annuler</button>
+                                                            <button class="btn-confirm" [class.green]="decisionType() === 'validate'" [class.red]="decisionType() === 'reject'"
+                                                                    [disabled]="isSubmitting() || (decisionType() === 'reject' && !commentaire)"
+                                                                    (click)="decisionType() === 'validate' ? confirmValidation(soutenance.id, $event) : confirmRejection(soutenance.id, $event)">
+                                                                {{ decisionType() === 'validate' ? 'Confirmer' : 'Envoyer' }}
                                                             </button>
-                                                            <button class="choice-card reject" (click)="initiateRejection(soutenance.id, $event)">
-                                                                <div class="choice-icon"><i class="bi bi-pencil-square"></i></div>
-                                                                <div class="choice-text"><strong>Corrections</strong><span>Demander modifications</span></div>
-                                                            </button>
-                                                        </div>
-                                                    } @else if (decisionType() === 'validate') {
-                                                        <div class="decision-panel approve">
-                                                            <p>Confirmer la validation des prérequis de <strong>{{ getDoctorantName(soutenance) }}</strong> ?</p>
-                                                            <div class="panel-actions">
-                                                                <button class="btn-cancel" (click)="cancelDecision($event)">Annuler</button>
-                                                                <button class="btn-confirm success" [disabled]="isSubmitting()" (click)="confirmValidation(soutenance.id, $event)">@if (isSubmitting()) { <span class="spinner-sm"></span> } Confirmer</button>
-                                                            </div>
-                                                        </div>
-                                                    } @else {
-                                                        <div class="decision-panel reject">
-                                                            <textarea class="decision-textarea" [(ngModel)]="commentaire" placeholder="Décrivez les corrections nécessaires..."></textarea>
-                                                            <div class="panel-actions">
-                                                                <button class="btn-cancel" (click)="cancelDecision($event)">Annuler</button>
-                                                                <button class="btn-confirm danger" [disabled]="!commentaire.trim() || isSubmitting()" (click)="confirmRejection(soutenance.id, $event)">@if (isSubmitting()) { <span class="spinner-sm"></span> } Envoyer</button>
-                                                            </div>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
-
-                                            <!-- PREREQUIS_VALIDES -->
-                                            @if (soutenance.statut === 'PREREQUIS_VALIDES') {
-                                                <div class="detail-card status-card waiting">
-                                                    <div class="status-icon"><i class="bi bi-hourglass-split"></i></div>
-                                                    <div class="status-text"><h5>En attente de l'administration</h5><p>Votre validation a été transmise.</p></div>
-                                                </div>
-                                            }
-
-                                            <!-- AUTORISEE: Sélection Jury -->
-                                            @if (soutenance.statut === 'AUTORISEE') {
-                                                <div class="detail-card jury-card">
-                                                    <div class="jury-header">
-                                                        <h5 class="detail-title"><i class="bi bi-people-fill"></i>Composition du Jury</h5>
-                                                        <span class="authorized-badge"><i class="bi bi-check-circle-fill"></i>Autorisée</span>
-                                                    </div>
-                                                    <p class="jury-instruction">Sélectionnez les 3 membres du jury :</p>
-                                                    <div class="jury-selection-grid">
-                                                        <div class="jury-select-card" [class.selected]="jurySelection.presidentId">
-                                                            <div class="select-header president"><i class="bi bi-star-fill"></i><span>Président</span></div>
-                                                            <select [(ngModel)]="jurySelection.presidentId">
-                                                                <option [ngValue]="null">-- Choisir --</option>
-                                                                @for (m of presidentsDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }} - {{ m.etablissement }}</option> }
-                                                            </select>
-                                                        </div>
-                                                        <div class="jury-select-card" [class.selected]="jurySelection.rapporteurId">
-                                                            <div class="select-header rapporteur"><i class="bi bi-file-text-fill"></i><span>Rapporteur</span></div>
-                                                            <select [(ngModel)]="jurySelection.rapporteurId">
-                                                                <option [ngValue]="null">-- Choisir --</option>
-                                                                @for (m of rapporteursDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }} - {{ m.etablissement }}</option> }
-                                                            </select>
-                                                        </div>
-                                                        <div class="jury-select-card" [class.selected]="jurySelection.examinateurId">
-                                                            <div class="select-header examinateur"><i class="bi bi-search"></i><span>Examinateur</span></div>
-                                                            <select [(ngModel)]="jurySelection.examinateurId">
-                                                                <option [ngValue]="null">-- Choisir --</option>
-                                                                @for (m of examinateursDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }} - {{ m.etablissement }}</option> }
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="jury-submit">
-                                                        <div class="selection-count">{{ getSelectionCount() }}/3 sélectionnés</div>
-                                                        <button class="btn-submit-jury" [disabled]="!isJurySelectionValid() || isSubmitting()" (click)="submitJurySelection(soutenance.id, $event)">
-                                                            @if (isSubmitting()) { <span class="spinner-sm"></span> } @else { <i class="bi bi-send-check"></i> } Soumettre le jury
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            }
-
-                                            <!-- JURY_PROPOSE -->
-                                            @if (soutenance.statut === 'JURY_PROPOSE') {
-                                                <div class="detail-card status-card waiting">
-                                                    <div class="status-icon"><i class="bi bi-people-fill"></i></div>
-                                                    <div class="status-text"><h5>Jury en cours de validation</h5><p>L'administration va planifier la date.</p></div>
-                                                </div>
-                                                @if (soutenance.membresJury?.length) {
-                                                    <div class="detail-card jury-display">
-                                                        <h5 class="detail-title"><i class="bi bi-people"></i>Jury proposé</h5>
-                                                        <div class="jury-members-grid">
-                                                            @for (m of getUniqueJuryMembers(soutenance.membresJury); track m.id) {
-                                                                <div class="jury-member" [ngClass]="'role-' + m.role.toLowerCase()">
-                                                                    <div class="member-avatar">{{ getInitials(m.prenom + ' ' + m.nom) }}</div>
-                                                                    <div class="member-info"><span class="member-name">{{ m.prenom }} {{ m.nom }}</span><span class="member-ets">{{ m.etablissement }}</span></div>
-                                                                    <span class="role-tag">{{ formatRole(m.role) }}</span>
-                                                                </div>
-                                                            }
                                                         </div>
                                                     </div>
                                                 }
-                                            }
+                                            </div>
+                                        }
 
-                                            <!-- PLANIFIEE -->
-                                            @if (soutenance.statut === 'PLANIFIEE') {
-                                                <div class="detail-card status-card scheduled">
-                                                    <div class="status-icon"><i class="bi bi-calendar-check-fill"></i></div>
-                                                    <div class="status-text">
-                                                        <h5>Soutenance planifiée</h5>
-                                                        <div class="schedule-info">
-                                                            <span><i class="bi bi-calendar-event"></i>{{ soutenance.dateSoutenance | date:'dd/MM/yyyy' }}</span>
-                                                            @if (soutenance.heureSoutenance) { <span><i class="bi bi-clock"></i>{{ soutenance.heureSoutenance }}</span> }
-                                                            @if (soutenance.lieuSoutenance) { <span><i class="bi bi-geo-alt"></i>{{ soutenance.lieuSoutenance }}</span> }
+                                        <!-- ACTIONS : JURY (SI STATUT = AUTORISEE) -->
+                                        @if (soutenance.statut === 'AUTORISEE') {
+                                            <div class="action-area mt-4">
+                                                <h5 class="action-title"><i class="bi bi-people-fill"></i> Proposition du Jury</h5>
+                                                <p class="text-muted small mb-3">Sélectionnez les membres du jury pour soumission à l'administration.</p>
+
+                                                <div class="jury-grid">
+                                                    <div class="jury-select">
+                                                        <label class="text-president">Président</label>
+                                                        <select [(ngModel)]="jurySelection.presidentId">
+                                                            <option [ngValue]="null">-- Sélectionner --</option>
+                                                            @for (m of presidentsDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }} ({{ m.etablissement }})</option> }
+                                                        </select>
+                                                    </div>
+                                                    <div class="jury-select">
+                                                        <label class="text-rapporteur">Rapporteur</label>
+                                                        <select [(ngModel)]="jurySelection.rapporteurId">
+                                                            <option [ngValue]="null">-- Sélectionner --</option>
+                                                            @for (m of rapporteursDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }} ({{ m.etablissement }})</option> }
+                                                        </select>
+                                                    </div>
+                                                    <div class="jury-select">
+                                                        <label class="text-examinateur">Examinateur</label>
+                                                        <select [(ngModel)]="jurySelection.examinateurId">
+                                                            <option [ngValue]="null">-- Sélectionner --</option>
+                                                            @for (m of examinateursDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }} ({{ m.etablissement }})</option> }
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="d-flex justify-content-end mt-3">
+                                                    <button class="btn-validate" [disabled]="!isJurySelectionValid() || isSubmitting()" (click)="submitJurySelection(soutenance.id, $event)">
+                                                        @if (isSubmitting()) { <span class="spinner-sm"></span> } Soumettre le jury
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+
+                                        <!-- AFFICHAGE JURY PROPOSÉ / VALIDÉ -->
+                                        @if (soutenance.membresJury?.length > 0) {
+                                            <div class="detail-box mt-3">
+                                                <h6><i class="bi bi-people"></i> Jury {{ soutenance.statut === 'JURY_PROPOSE' ? 'Proposé' : 'Validé' }}</h6>
+                                                <div class="jury-list-view">
+                                                    @for (m of getUniqueJuryMembers(soutenance.membresJury); track m.id) {
+                                                        <div class="jury-item">
+                                                            <span class="role-badge" [class]="m.role.toLowerCase()">{{ formatRole(m.role) }}</span>
+                                                            <span class="fw-bold">{{ m.prenom }} {{ m.nom }}</span>
+                                                            <span class="text-muted small">({{ m.etablissement }})</span>
                                                         </div>
-                                                    </div>
+                                                    }
                                                 </div>
-                                            }
+                                            </div>
+                                        }
 
-                                            <!-- TERMINEE -->
-                                            @if (soutenance.statut === 'TERMINEE') {
-                                                <div class="detail-card status-card completed">
-                                                    <div class="status-icon"><i class="bi bi-trophy-fill"></i></div>
-                                                    <div class="status-text">
-                                                        <h5>Terminée</h5>
-                                                        <span class="mention-badge">{{ soutenance.mention || 'N/A' }}</span>
-                                                        @if (soutenance.felicitationsJury) { <span class="felicitations"><i class="bi bi-star-fill"></i>Félicitations</span> }
-                                                    </div>
+                                        <!-- RÉSULTAT FINAL -->
+                                        @if (soutenance.statut === 'TERMINEE') {
+                                            <div class="alert alert-success mt-3 d-flex align-items-center gap-2">
+                                                <i class="bi bi-trophy-fill fs-4"></i>
+                                                <div>
+                                                    <strong>Soutenance terminée</strong><br>
+                                                    Mention : {{ soutenance.mention }}
+                                                    @if(soutenance.felicitationsJury) { <span class="badge bg-warning text-dark ms-2"><i class="bi bi-star-fill"></i> Félicitations</span> }
                                                 </div>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
+                                            </div>
+                                        }
+
+                                    </div>
+                                }
+                            </div>
+                        }
                     </div>
                 }
 
@@ -264,206 +273,117 @@ interface JurySelection {
         </app-main-layout>
     `,
     styles: [`
-      .page-container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+      .page-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
 
-      /* Hero */
-      .hero-header { background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; color: white; }
+      /* --- HERO --- */
+      .hero-section { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; color: white; }
       .hero-content { display: flex; align-items: center; gap: 1.25rem; }
       .hero-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; }
-      .hero-title { font-size: 1.5rem; font-weight: 800; margin: 0; }
-      .hero-subtitle { margin: 0.25rem 0 0; opacity: 0.9; font-size: 0.95rem; }
-      .btn-refresh { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: white; color: #6d28d9; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+      .hero-title { margin: 0; font-size: 1.6rem; font-weight: 800; }
+      .hero-subtitle { margin: 0.25rem 0 0; opacity: 0.9; }
+      .btn-refresh { padding: 0.75rem 1.25rem; background: white; color: #6d28d9; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
+      .btn-refresh:hover { transform: translateY(-2px); }
 
-      /* Stats */
+      /* --- STATS --- */
       .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-      .stat-card { background: white; border-radius: 14px; padding: 1rem; display: flex; align-items: center; gap: 1rem; border: 1px solid #e2e8f0; }
-      .stat-icon-wrap { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
-      .stat-card.warning .stat-icon-wrap { background: #fef3c7; color: #d97706; }
-      .stat-card.success .stat-icon-wrap { background: #dcfce7; color: #16a34a; }
-      .stat-card.info .stat-icon-wrap { background: #e0e7ff; color: #6366f1; }
-      .stat-card.neutral .stat-icon-wrap { background: #f1f5f9; color: #64748b; }
-      .stat-value { font-size: 1.5rem; font-weight: 800; color: #1e293b; display: block; }
-      .stat-label { font-size: 0.75rem; color: #64748b; }
+      .stat-card { background: white; border-radius: 16px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; }
+      .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+      .stat-card.orange .stat-icon { background: #fff7ed; color: #ea580c; }
+      .stat-card.blue .stat-icon { background: #eff6ff; color: #3b82f6; }
+      .stat-card.purple .stat-icon { background: #f3e8ff; color: #7c3aed; }
+      .stat-card.green .stat-icon { background: #dcfce7; color: #16a34a; }
+      .stat-value { font-size: 1.5rem; font-weight: 700; color: #1e293b; display: block; }
+      .stat-label { font-size: 0.8rem; color: #64748b; }
 
-      /* Loading/Empty */
-      .loading-state, .empty-state { background: white; border-radius: 16px; padding: 3rem; text-align: center; border: 1px solid #e2e8f0; }
-      .spinner-large { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #8b5cf6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
-      .spinner-btn { width: 16px; height: 16px; border: 2px solid rgba(109,40,217,0.3); border-top-color: #6d28d9; border-radius: 50%; animation: spin 0.8s linear infinite; }
-      .spinner-sm { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 0.25rem; }
-      @keyframes spin { 100% { transform: rotate(360deg); } }
-      .empty-icon { width: 70px; height: 70px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
-      .empty-icon i { font-size: 2rem; color: #94a3b8; }
+      /* --- TABS --- */
+      .tabs-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+      .tabs { background: #f1f5f9; padding: 5px; border-radius: 50px; display: inline-flex; gap: 5px; }
+      .tab-btn { border: none; background: transparent; padding: 0.75rem 1.5rem; border-radius: 40px; font-weight: 600; color: #64748b; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s; }
+      .tab-btn.active { background: white; color: #7c3aed; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .tab-badge { background: #ef4444; color: white; padding: 0.15rem 0.5rem; border-radius: 50px; font-size: 0.75rem; }
+      .tab-badge.info { background: #3b82f6; }
 
-      /* Section */
-      .soutenances-section { background: white; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; }
-      .section-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-      .section-title { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; }
-      .section-title i { color: #8b5cf6; }
-      .section-count { font-size: 0.85rem; color: #64748b; }
-      .soutenances-list { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+      /* --- LIST & CARDS --- */
+      .soutenances-list { display: flex; flex-direction: column; gap: 1rem; }
+      .soutenance-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; transition: all 0.2s; }
+      .soutenance-card:hover { border-color: #c4b5fd; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+      .soutenance-card.expanded { border-color: #7c3aed; box-shadow: 0 8px 25px rgba(124, 58, 237, 0.1); }
 
-      /* Card */
-      .soutenance-card { background: white; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; transition: all 0.2s; }
-      .soutenance-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-      .soutenance-card.expanded { border-color: #c7d2fe; box-shadow: 0 8px 25px rgba(139,92,246,0.1); }
-      .soutenance-card[data-status="SOUMIS"] { border-left: 4px solid #f59e0b; }
-      .soutenance-card[data-status="PREREQUIS_VALIDES"] { border-left: 4px solid #6366f1; }
-      .soutenance-card[data-status="AUTORISEE"] { border-left: 4px solid #10b981; }
-      .soutenance-card[data-status="JURY_PROPOSE"] { border-left: 4px solid #3b82f6; }
-      .soutenance-card[data-status="PLANIFIEE"] { border-left: 4px solid #8b5cf6; }
-      .soutenance-card[data-status="TERMINEE"] { border-left: 4px solid #22c55e; }
+      /* Card Header */
+      .card-header { padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; gap: 1rem; }
+      .user-identity { display: flex; align-items: center; gap: 1rem; flex: 2; }
+      .avatar-circle { width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+      .user-info { display: flex; flex-direction: column; overflow: hidden; }
+      .user-info .name { font-weight: 700; color: #1e293b; font-size: 1rem; }
+      .user-info .title { font-size: 0.85rem; color: #64748b; }
 
-      .card-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; cursor: pointer; }
-      .card-header:hover { background: #f8fafc; }
-      .header-left { display: flex; align-items: flex-start; gap: 1rem; flex: 1; }
-      .status-indicator { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
-      .status-indicator.pending { background: #fef3c7; color: #d97706; }
-      .status-indicator.waiting-admin { background: #e0e7ff; color: #6366f1; }
-      .status-indicator.jury { background: #dcfce7; color: #16a34a; }
-      .status-indicator.scheduled { background: #f3e8ff; color: #8b5cf6; }
-      .status-indicator.approved { background: #dcfce7; color: #22c55e; }
-      .header-top { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-      .doctorant-name { font-weight: 700; color: #1e293b; }
-      .thesis-title { font-size: 0.9rem; font-weight: 600; color: #475569; margin: 0.25rem 0; }
-      .header-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-      .meta-item { display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #64748b; }
-      .action-required { display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #dc2626; background: #fef2f2; padding: 0.2rem 0.5rem; border-radius: 4px; }
-      .status-badge { padding: 0.25rem 0.6rem; border-radius: 50px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
-      .status-badge.pending { background: #fef3c7; color: #b45309; }
-      .status-badge.waiting-admin { background: #e0e7ff; color: #4338ca; }
-      .status-badge.jury { background: #dcfce7; color: #166534; }
+      .meta-info { flex: 1; justify-content: center; color: #64748b; font-size: 0.9rem; }
+
+      .status-section { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; }
+      .status-badge { padding: 0.4rem 0.8rem; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+      .status-badge.pending { background: #fef3c7; color: #b45309; } /* Action requise */
+      .status-badge.waiting { background: #e0e7ff; color: #4338ca; } /* En attente */
       .status-badge.scheduled { background: #f3e8ff; color: #7c3aed; }
-      .status-badge.approved { background: #dcfce7; color: #15803d; }
-      .expand-btn { width: 36px; height: 36px; border-radius: 8px; border: none; background: #f1f5f9; color: #64748b; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-      .expand-btn.rotated { background: #8b5cf6; color: white; transform: rotate(180deg); }
+      .status-badge.success { background: #dcfce7; color: #15803d; }
+      .status-badge.danger { background: #fee2e2; color: #991b1b; }
 
-      .card-body { padding: 1.25rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 1rem; }
-      .detail-card { background: white; border-radius: 12px; padding: 1.25rem; border: 1px solid #e2e8f0; }
-      .detail-title { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 700; color: #475569; margin: 0 0 1rem; }
-      .detail-title i { color: #8b5cf6; }
+      .expand-icon { color: #94a3b8; transition: transform 0.3s; }
+      .expand-icon.rotated { transform: rotate(180deg); color: #7c3aed; }
 
-      /* Prérequis */
-      .prerequis-card { background: linear-gradient(135deg, #faf5ff, #f3e8ff); border-color: #c4b5fd; }
-      .prerequis-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
-      .prereq-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem; background: white; border-radius: 10px; border: 1px solid #e2e8f0; }
-      .prereq-item.valid { border-color: #86efac; background: #f0fdf4; }
-      .prereq-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-      .prereq-icon.publications { background: #dbeafe; color: #2563eb; }
-      .prereq-icon.conferences { background: #fef3c7; color: #d97706; }
-      .prereq-icon.heures { background: #f3e8ff; color: #8b5cf6; }
-      .prereq-value { display: block; font-size: 1.25rem; font-weight: 800; color: #1e293b; }
-      .prereq-label { font-size: 0.7rem; color: #64748b; }
-      .prereq-status { margin-left: auto; }
-      .prereq-target { font-size: 0.65rem; color: #94a3b8; background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; }
-      .valid-icon { color: #22c55e; font-size: 1.1rem; }
-      .prereq-progress { padding: 0.75rem; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
-      .progress-info { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 0.5rem; }
-      .progress-pct { color: #8b5cf6; }
-      .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-      .progress-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #6d28d9); border-radius: 4px; transition: width 0.3s; }
-      .progress-fill.complete { background: linear-gradient(90deg, #22c55e, #16a34a); }
+      /* Card Body */
+      .card-body { padding: 0 1.5rem 1.5rem; background: #fff; cursor: default; }
+      .separator { border-top: 1px solid #f1f5f9; margin: 0 0 1.5rem; }
 
-      /* Documents */
-      .documents-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-      .doc-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; transition: all 0.2s; }
-      .doc-link:hover:not(.disabled) { border-color: #8b5cf6; }
-      .doc-link.disabled { opacity: 0.5; pointer-events: none; }
-      .doc-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-      .doc-icon.manuscrit { background: #fee2e2; color: #dc2626; }
-      .doc-icon.rapport { background: #dbeafe; color: #2563eb; }
-      .doc-name { font-weight: 600; color: #1e293b; font-size: 0.85rem; flex: 1; }
-      .doc-badge { font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: #f1f5f9; color: #64748b; }
-      .doc-badge.available { background: #dcfce7; color: #15803d; }
+      .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+      .detail-box { background: #f8fafc; border-radius: 12px; padding: 1rem; border: 1px solid #e2e8f0; }
+      .detail-box h6 { font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
 
-      /* Action Card */
-      .action-card { border-color: #fcd34d; background: linear-gradient(135deg, #fffbeb, #fef3c7); }
-      .choice-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-      .choice-card { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border-radius: 10px; border: 2px solid; background: white; cursor: pointer; text-align: left; transition: all 0.2s; }
-      .choice-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-      .choice-card.approve { border-color: #86efac; }
-      .choice-card.approve:hover { border-color: #22c55e; }
-      .choice-card.approve .choice-icon { background: #dcfce7; color: #16a34a; }
-      .choice-card.reject { border-color: #fecaca; }
-      .choice-card.reject:hover { border-color: #ef4444; }
-      .choice-card.reject .choice-icon { background: #fee2e2; color: #dc2626; }
-      .choice-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
-      .choice-text strong { display: block; font-size: 0.9rem; color: #1e293b; }
-      .choice-text span { font-size: 0.75rem; color: #64748b; }
+      .prereq-items { display: flex; flex-direction: column; gap: 0.5rem; }
+      .p-item { display: flex; justify-content: space-between; font-size: 0.9rem; color: #64748b; padding: 0.4rem 0.6rem; border-radius: 6px; background: white; }
+      .p-item.ok { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
 
-      /* Decision Panel */
-      .decision-panel { margin-top: 0.75rem; padding: 1rem; border-radius: 10px; }
-      .decision-panel.approve { background: #f0fdf4; border: 1px solid #86efac; }
-      .decision-panel.reject { background: #fef2f2; border: 1px solid #fecaca; }
-      .decision-panel p { margin: 0 0 1rem; font-size: 0.9rem; color: #1e293b; }
-      .decision-textarea { width: 100%; padding: 0.75rem; border: 1px solid #fca5a5; border-radius: 8px; font-size: 0.9rem; resize: vertical; min-height: 80px; margin-bottom: 1rem; }
-      .decision-textarea:focus { outline: none; border-color: #ef4444; }
-      .panel-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
-      .btn-cancel { padding: 0.6rem 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #64748b; cursor: pointer; }
-      .btn-confirm { display: flex; align-items: center; padding: 0.6rem 1.25rem; border: none; border-radius: 8px; font-weight: 600; color: white; cursor: pointer; }
-      .btn-confirm.success { background: #22c55e; }
-      .btn-confirm.danger { background: #ef4444; }
-      .btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+      .doc-list { display: flex; flex-direction: column; gap: 0.5rem; }
+      .doc-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #1e293b; font-size: 0.9rem; transition: all 0.2s; }
+      .doc-btn:hover:not(.disabled) { border-color: #7c3aed; color: #7c3aed; }
+      .doc-btn.disabled { opacity: 0.6; pointer-events: none; background: #f1f5f9; }
 
-      /* Status Card */
-      .status-card { display: flex; align-items: center; gap: 1rem; border: none; }
-      .status-card.waiting { background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #93c5fd; }
-      .status-card.scheduled { background: linear-gradient(135deg, #faf5ff, #f3e8ff); border: 1px solid #c4b5fd; }
-      .status-card.completed { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #86efac; }
-      .status-card .status-icon { width: 50px; height: 50px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
-      .status-card.waiting .status-icon { color: #3b82f6; }
-      .status-card.scheduled .status-icon { color: #8b5cf6; }
-      .status-card.completed .status-icon { color: #22c55e; }
-      .status-text h5 { margin: 0 0 0.25rem; font-size: 1rem; font-weight: 700; color: #1e293b; }
-      .status-text p { margin: 0; font-size: 0.85rem; color: #64748b; }
-      .schedule-info { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; }
-      .schedule-info span { display: flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; font-weight: 600; color: #475569; background: white; padding: 0.35rem 0.75rem; border-radius: 6px; }
-      .schedule-info i { color: #8b5cf6; }
-      .mention-badge { display: inline-block; font-size: 1.1rem; font-weight: 800; color: #15803d; margin-top: 0.5rem; }
-      .felicitations { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.75rem; padding: 0.35rem 0.75rem; background: #fef3c7; border-radius: 50px; font-size: 0.8rem; font-weight: 600; color: #b45309; }
+      /* Actions Area */
+      .action-area { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 1.25rem; }
+      .action-title { color: #9a3412; font-size: 1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
 
-      /* Jury Card */
-      .jury-card { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #86efac; }
-      .jury-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
-      .authorized-badge { display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; background: #dcfce7; border-radius: 50px; font-size: 0.75rem; font-weight: 600; color: #15803d; }
-      .jury-instruction { margin: 0 0 1rem; font-size: 0.85rem; color: #64748b; }
-      .jury-selection-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem; }
-      .jury-select-card { background: white; border-radius: 10px; padding: 1rem; border: 2px solid #e2e8f0; transition: all 0.2s; }
-      .jury-select-card.selected { border-color: #86efac; }
-      .select-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-weight: 700; font-size: 0.85rem; }
-      .select-header.president { color: #d97706; }
-      .select-header.rapporteur { color: #2563eb; }
-      .select-header.examinateur { color: #8b5cf6; }
-      .select-header i { font-size: 1rem; }
-      .jury-select-card select { width: 100%; padding: 0.6rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: white; }
-      .jury-select-card select:focus { outline: none; border-color: #8b5cf6; }
-      .jury-submit { display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 10px; border: 1px solid #e2e8f0; }
-      .selection-count { font-size: 0.85rem; font-weight: 600; color: #475569; }
-      .btn-submit-jury { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
-      .btn-submit-jury:disabled { opacity: 0.6; cursor: not-allowed; }
+      .btn-validate { padding: 0.6rem 1.2rem; background: #22c55e; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+      .btn-refuse { padding: 0.6rem 1.2rem; background: white; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; font-weight: 600; cursor: pointer; }
 
-      /* Jury Display */
-      .jury-display { background: #f8fafc; }
-      .jury-members-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
-      .jury-member { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem; background: white; border-radius: 10px; border: 1px solid #e2e8f0; }
-      .member-avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; color: white; flex-shrink: 0; }
-      .jury-member.role-president .member-avatar { background: linear-gradient(135deg, #f59e0b, #d97706); }
-      .jury-member.role-rapporteur .member-avatar { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-      .jury-member.role-examinateur .member-avatar { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
-      .member-info { flex: 1; min-width: 0; }
-      .member-name { display: block; font-weight: 600; color: #1e293b; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .member-ets { display: block; font-size: 0.7rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .role-tag { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
-      .jury-member.role-president .role-tag { background: #fef3c7; color: #b45309; }
-      .jury-member.role-rapporteur .role-tag { background: #dbeafe; color: #1d4ed8; }
-      .jury-member.role-examinateur .role-tag { background: #f3e8ff; color: #7c3aed; }
+      /* Decision Form */
+      .decision-form { background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; }
+      .decision-form.approve { border-color: #86efac; background: #f0fdf4; }
+      .decision-form.reject { border-color: #fecaca; background: #fef2f2; }
 
-      /* Toast */
-      .toast { position: fixed; bottom: 2rem; right: 2rem; display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.25rem; border-radius: 10px; color: white; font-weight: 600; font-size: 0.9rem; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+      /* Jury Grid */
+      .jury-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+      .jury-select label { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.3rem; text-transform: uppercase; }
+      .jury-select select { width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; }
+      .text-president { color: #d97706; }
+      .text-rapporteur { color: #2563eb; }
+      .text-examinateur { color: #7c3aed; }
+
+      .jury-list-view { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+      .jury-item { background: white; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 0.25rem; }
+      .role-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; width: fit-content; padding: 0.1rem 0.4rem; border-radius: 4px; }
+      .role-badge.president { background: #fef3c7; color: #b45309; }
+      .role-badge.rapporteur { background: #dbeafe; color: #1d4ed8; }
+      .role-badge.examinateur { background: #f3e8ff; color: #6d28d9; }
+
+      .loading-state, .empty-state { text-align: center; padding: 4rem; color: #64748b; background: white; border-radius: 16px; border: 1px solid #e2e8f0; }
+      .spinner-large { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #7c3aed; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+      .spinner-btn { width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+
+      .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 10px; color: white; font-weight: 600; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
       .toast.success { background: #22c55e; }
       .toast.error { background: #ef4444; }
 
-      @media (max-width: 1024px) { .jury-selection-grid, .jury-members-grid, .prerequis-grid { grid-template-columns: 1fr; } }
-      @media (max-width: 768px) { .hero-header { flex-direction: column; gap: 1rem; text-align: center; } .hero-content { flex-direction: column; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .choice-grid, .documents-grid { grid-template-columns: 1fr; } }
+      @media (max-width: 992px) { .stats-grid, .detail-grid, .jury-grid, .jury-list-view { grid-template-columns: 1fr; } .hero-section { flex-direction: column; text-align: center; gap: 1rem; } }
     `]
 })
 export class DirectorSoutenanceComponent implements OnInit {
@@ -471,11 +391,15 @@ export class DirectorSoutenanceComponent implements OnInit {
     isLoading = signal(false);
     isSubmitting = signal(false);
     expandedId = signal<number | null>(null);
+    activeTab = 'TODO'; // Par défaut : À traiter
+
+    // Form data
     showDecisionForm = signal(false);
     decisionType = signal<'validate' | 'reject' | null>(null);
     commentaire = '';
     currentSoutenanceId: number | null = null;
 
+    // Jury data
     presidentsDisponibles = signal<MembreJury[]>([]);
     rapporteursDisponibles = signal<MembreJury[]>([]);
     examinateursDisponibles = signal<MembreJury[]>([]);
@@ -494,7 +418,7 @@ export class DirectorSoutenanceComponent implements OnInit {
         if (!currentUser?.id) { this.isLoading.set(false); return; }
         this.soutenanceService.getSoutenancesByDirecteur(currentUser.id).subscribe({
             next: (data) => { this.soutenances.set(data); this.isLoading.set(false); },
-            error: () => { this.isLoading.set(false); this.showToast('Erreur', 'error'); }
+            error: () => { this.isLoading.set(false); this.showToast('Erreur chargement', 'error'); }
         });
     }
 
@@ -504,86 +428,118 @@ export class DirectorSoutenanceComponent implements OnInit {
         this.soutenanceService.getMembresJuryByRole('EXAMINATEUR').subscribe({ next: (d) => this.examinateursDisponibles.set(d) });
     }
 
+    // --- TAB LOGIC ---
+    setTab(tab: string) {
+        this.activeTab = tab;
+        this.expandedId.set(null); // Close opened items on tab switch
+    }
+
+    filteredSoutenances() {
+        const all = this.soutenances();
+        if (this.activeTab === 'TODO') {
+            // Action requise : Valider prérequis (SOUMIS) ou Proposer jury (AUTORISEE)
+            return all.filter(s => ['SOUMIS', 'AUTORISEE'].includes(s.statut));
+        }
+        if (this.activeTab === 'PENDING') {
+            // En attente : Prérequis validés (Attente Admin) ou Jury proposé (Attente Admin) ou Planifiée (Attente Date)
+            return all.filter(s => ['PREREQUIS_VALIDES', 'JURY_PROPOSE', 'PLANIFIEE'].includes(s.statut));
+        }
+        if (this.activeTab === 'HISTORY') {
+            return all.filter(s => ['TERMINEE', 'REJETEE'].includes(s.statut));
+        }
+        return [];
+    }
+
+    getCount(tab: string): number {
+        const all = this.soutenances();
+        if (tab === 'TODO') return all.filter(s => ['SOUMIS', 'AUTORISEE'].includes(s.statut)).length;
+        if (tab === 'PENDING') return all.filter(s => ['PREREQUIS_VALIDES', 'JURY_PROPOSE', 'PLANIFIEE'].includes(s.statut)).length;
+        if (tab === 'SCHEDULED') return all.filter(s => s.statut === 'PLANIFIEE').length;
+        if (tab === 'HISTORY') return all.filter(s => ['TERMINEE', 'REJETEE'].includes(s.statut)).length;
+        return 0;
+    }
+
+    // --- EXPAND LOGIC ---
     toggleExpand(id: number) { this.expandedId() === id ? (this.expandedId.set(null), this.resetForms()) : (this.expandedId.set(id), this.resetForms()); }
     resetForms() { this.showDecisionForm.set(false); this.decisionType.set(null); this.commentaire = ''; this.currentSoutenanceId = null; this.jurySelection = { presidentId: null, rapporteurId: null, examinateurId: null }; }
-    showToast(msg: string, type: 'success' | 'error') { this.toastMessage.set(msg); this.toastType.set(type); setTimeout(() => this.toastMessage.set(''), 4000); }
 
-    // Prérequis
+    // --- HELPERS ---
+    getDoctorantName(s: any): string { return s.doctorantInfo ? `${s.doctorantInfo.prenom} ${s.doctorantInfo.nom}` : `Doc #${s.doctorantId}`; }
+    getThesisTitle(s: any): string { return s.titreThese || 'Non défini'; }
+    getDocumentUrl(filename: string): string { return this.soutenanceService.getDocumentUrl(filename); }
+    getInitials(name: string): string { const p = name.trim().split(' '); return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : name[0]?.toUpperCase() || '?'; }
+
+    // Status visual helpers
+    getStatusBadgeClass(s: string) { return ['SOUMIS', 'AUTORISEE'].includes(s) ? 'pending' : ['PREREQUIS_VALIDES', 'JURY_PROPOSE'].includes(s) ? 'waiting' : s === 'PLANIFIEE' ? 'scheduled' : s === 'TERMINEE' ? 'success' : 'danger'; }
+    getStatusIcon(s: string) { return ['SOUMIS', 'AUTORISEE'].includes(s) ? 'bi-exclamation-circle' : ['PREREQUIS_VALIDES', 'JURY_PROPOSE'].includes(s) ? 'bi-hourglass-split' : s === 'PLANIFIEE' ? 'bi-calendar-check' : s === 'TERMINEE' ? 'bi-check-circle-fill' : 'bi-x-circle'; }
+    formatStatus(s: string) {
+        const map: any = { 'SOUMIS': 'À Valider', 'PREREQUIS_VALIDES': 'Attente Admin', 'AUTORISEE': 'Jury à faire', 'JURY_PROPOSE': 'Jury en validation', 'PLANIFIEE': 'Planifiée', 'TERMINEE': 'Terminée' };
+        return map[s] || s;
+    }
+
+    // Prerequis Data
     getPublications(s: any): number { return s.doctorantInfo?.nbPublications || 0; }
     getConferences(s: any): number { return s.doctorantInfo?.nbConferences || 0; }
     getHeuresFormation(s: any): number { return s.doctorantInfo?.heuresFormation || 0; }
-    calculatePrereqProgress(s: any): number {
-        const pubs = Math.min(this.getPublications(s) / 2, 1) * 33.33;
-        const confs = Math.min(this.getConferences(s) / 2, 1) * 33.33;
-        const heures = Math.min(this.getHeuresFormation(s) / 200, 1) * 33.34;
-        return Math.round(pubs + confs + heures);
-    }
 
-    // Helpers
-    getDoctorantName(s: any): string { return s.doctorantInfo ? `${s.doctorantInfo.prenom} ${s.doctorantInfo.nom}` : `Doctorant #${s.doctorantId}`; }
-    getThesisTitle(s: any): string { return s.titreThese || 'Sujet non défini'; }
-    getDocumentUrl(filename: string): string { return this.soutenanceService.getDocumentUrl(filename); }
-    getInitials(name: string): string { const p = name.trim().split(' '); return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : name[0]?.toUpperCase() || '?'; }
     needsDirectorAction(statut: string): boolean { return ['SOUMIS', 'AUTORISEE'].includes(statut); }
-    getActionNeededText(statut: string): string { return statut === 'SOUMIS' ? 'Valider prérequis' : statut === 'AUTORISEE' ? 'Sélectionner jury' : ''; }
+    getActionNeededText(statut: string): string { return statut === 'SOUMIS' ? 'Valider prérequis' : 'Proposer jury'; }
 
-    getPendingValidationCount(): number { return this.soutenances().filter(s => s.statut === 'SOUMIS').length; }
-    getJuryNeededCount(): number { return this.soutenances().filter(s => s.statut === 'AUTORISEE').length; }
-    getWaitingAdminCount(): number { return this.soutenances().filter(s => ['PREREQUIS_VALIDES', 'JURY_PROPOSE'].includes(s.statut)).length; }
+    // Jury Helpers
+    getUniqueJuryMembers(members: any[]): any[] { if (!members) return []; const seen = new Map(); return members.filter(m => { const k = `${m.nom}-${m.role}`; if (seen.has(k)) return false; seen.set(k, true); return true; }); }
+    formatRole(r: string) { return { 'PRESIDENT': 'Président', 'RAPPORTEUR': 'Rapporteur', 'EXAMINATEUR': 'Examinateur' }[r] || r; }
 
-    getStatusIndicatorClass(statut: string): string { return { 'SOUMIS': 'pending', 'PREREQUIS_VALIDES': 'waiting-admin', 'AUTORISEE': 'jury', 'JURY_PROPOSE': 'waiting-admin', 'PLANIFIEE': 'scheduled', 'TERMINEE': 'approved' }[statut] || 'pending'; }
-    getStatusIcon(statut: string): string { return { 'SOUMIS': 'bi-hourglass-split', 'PREREQUIS_VALIDES': 'bi-clock', 'AUTORISEE': 'bi-people-fill', 'JURY_PROPOSE': 'bi-send', 'PLANIFIEE': 'bi-calendar-check', 'TERMINEE': 'bi-trophy-fill' }[statut] || 'bi-circle'; }
-    getStatusBadgeClass(statut: string): string { return this.getStatusIndicatorClass(statut); }
-    formatStatus(statut: string): string { return { 'SOUMIS': 'À Valider', 'PREREQUIS_VALIDES': 'Attente Admin', 'AUTORISEE': 'Jury requis', 'JURY_PROPOSE': 'Jury Soumis', 'PLANIFIEE': 'Planifiée', 'TERMINEE': 'Terminée' }[statut] || statut; }
-    formatRole(role: string): string { return { 'PRESIDENT': 'Président', 'RAPPORTEUR': 'Rapporteur', 'EXAMINATEUR': 'Examinateur' }[role] || role; }
-    getUniqueJuryMembers(members: any[]): any[] { if (!members) return []; const seen = new Map(); return members.filter(m => { const k = `${m.nom}-${m.prenom}-${m.role}`; if (seen.has(k)) return false; seen.set(k, true); return true; }); }
-
-    getSelectionCount(): number { let c = 0; if (this.jurySelection.presidentId) c++; if (this.jurySelection.rapporteurId) c++; if (this.jurySelection.examinateurId) c++; return c; }
-    isJurySelectionValid(): boolean { return !!(this.jurySelection.presidentId && this.jurySelection.rapporteurId && this.jurySelection.examinateurId); }
-
-    submitJurySelection(soutenanceId: number, event: Event) {
-        event.stopPropagation();
-        if (!this.isJurySelectionValid()) return;
-        this.isSubmitting.set(true);
-        const president = this.presidentsDisponibles().find(m => m.id === this.jurySelection.presidentId)!;
-        const rapporteur = this.rapporteursDisponibles().find(m => m.id === this.jurySelection.rapporteurId)!;
-        const examinateur = this.examinateursDisponibles().find(m => m.id === this.jurySelection.examinateurId)!;
-        const addRequests = [
-            this.soutenanceService.ajouterMembreJury(soutenanceId, { nom: president.nom, prenom: president.prenom, email: president.email, etablissement: president.etablissement, grade: president.grade, specialite: president.specialite, role: 'PRESIDENT' }),
-            this.soutenanceService.ajouterMembreJury(soutenanceId, { nom: rapporteur.nom, prenom: rapporteur.prenom, email: rapporteur.email, etablissement: rapporteur.etablissement, grade: rapporteur.grade, specialite: rapporteur.specialite, role: 'RAPPORTEUR' }),
-            this.soutenanceService.ajouterMembreJury(soutenanceId, { nom: examinateur.nom, prenom: examinateur.prenom, email: examinateur.email, etablissement: examinateur.etablissement, grade: examinateur.grade, specialite: examinateur.specialite, role: 'EXAMINATEUR' })
-        ];
-        forkJoin(addRequests).subscribe({
-            next: () => {
-                this.soutenanceService.proposerJury(soutenanceId).subscribe({
-                    next: () => { this.showToast('Jury proposé !', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); },
-                    error: (e) => { this.showToast(e.error?.error || 'Erreur', 'error'); this.isSubmitting.set(false); }
-                });
-            },
-            error: () => { this.showToast('Erreur ajout', 'error'); this.isSubmitting.set(false); }
-        });
-    }
-
+    // Forms Logic
+    isJurySelectionValid() { return !!(this.jurySelection.presidentId && this.jurySelection.rapporteurId && this.jurySelection.examinateurId); }
     initiateValidation(id: number, e: Event) { e.stopPropagation(); this.currentSoutenanceId = id; this.showDecisionForm.set(true); this.decisionType.set('validate'); }
-    initiateRejection(id: number, e: Event) { e.stopPropagation(); this.currentSoutenanceId = id; this.showDecisionForm.set(true); this.decisionType.set('reject'); this.commentaire = ''; }
-    cancelDecision(e: Event) { e.stopPropagation(); this.showDecisionForm.set(false); this.decisionType.set(null); this.commentaire = ''; this.currentSoutenanceId = null; }
+    initiateRejection(id: number, e: Event) { e.stopPropagation(); this.currentSoutenanceId = id; this.showDecisionForm.set(true); this.decisionType.set('reject'); }
 
+    // Actions
     confirmValidation(id: number, e: Event) {
-        e.stopPropagation();
-        this.isSubmitting.set(true);
-        this.soutenanceService.validerPrerequisDirecteur(id, 'Prérequis validés').subscribe({
-            next: () => { this.showToast('Prérequis validés !', 'success'); this.loadData(); this.showDecisionForm.set(false); this.isSubmitting.set(false); },
-            error: (err) => { this.showToast(err.error?.error || 'Erreur', 'error'); this.isSubmitting.set(false); }
+        e.stopPropagation(); this.isSubmitting.set(true);
+        this.soutenanceService.validerPrerequisDirecteur(id, 'Validé').subscribe({
+            next: () => { this.showToast('Validé !', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); },
+            error: () => { this.showToast('Erreur', 'error'); this.isSubmitting.set(false); }
         });
     }
 
     confirmRejection(id: number, e: Event) {
-        e.stopPropagation();
-        if (!this.commentaire.trim()) return;
-        this.isSubmitting.set(true);
-        this.soutenanceService.rejeterDemandeDirecteur(id, this.commentaire.trim()).subscribe({
-            next: () => { this.showToast('Corrections demandées', 'success'); this.loadData(); this.showDecisionForm.set(false); this.isSubmitting.set(false); },
-            error: (err) => { this.showToast(err.error?.error || 'Erreur', 'error'); this.isSubmitting.set(false); }
+        e.stopPropagation(); this.isSubmitting.set(true);
+        this.soutenanceService.rejeterDemandeDirecteur(id, this.commentaire).subscribe({
+            next: () => { this.showToast('Rejeté', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); },
+            error: () => { this.showToast('Erreur', 'error'); this.isSubmitting.set(false); }
         });
+    }
+
+    submitJurySelection(id: number, e: Event) {
+        e.stopPropagation();
+        if (!this.isJurySelectionValid()) return;
+        this.isSubmitting.set(true);
+
+        // Simuler ajout en chaîne (en vrai, backend devrait avoir un endpoint groupé)
+        const p = this.presidentsDisponibles().find(m => m.id === this.jurySelection.presidentId)!;
+        const r = this.rapporteursDisponibles().find(m => m.id === this.jurySelection.rapporteurId)!;
+        const ex = this.examinateursDisponibles().find(m => m.id === this.jurySelection.examinateurId)!;
+
+        const reqs = [
+            this.soutenanceService.ajouterMembreJury(id, { ...p, role: 'PRESIDENT' }),
+            this.soutenanceService.ajouterMembreJury(id, { ...r, role: 'RAPPORTEUR' }),
+            this.soutenanceService.ajouterMembreJury(id, { ...ex, role: 'EXAMINATEUR' })
+        ];
+
+        forkJoin(reqs).subscribe({
+            next: () => {
+                this.soutenanceService.proposerJury(id).subscribe({
+                    next: () => { this.showToast('Jury soumis !', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); },
+                    error: () => { this.showToast('Erreur proposition', 'error'); this.isSubmitting.set(false); }
+                });
+            },
+            error: () => { this.showToast('Erreur ajout membres', 'error'); this.isSubmitting.set(false); }
+        });
+    }
+
+    showToast(msg: string, type: 'success' | 'error') {
+        this.toastMessage.set(msg); this.toastType.set(type);
+        setTimeout(() => this.toastMessage.set(''), 4000);
     }
 }

@@ -2,28 +2,27 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { User, EtatCandidature } from '../models/user.model';
+import { User } from '../models/user.model';
 
 @Injectable({
     providedIn: 'root'
 })
 export class UserService {
 
-    // ✅ CORRIGÉ: environment.userServiceUrl contient déjà /api
+    // URL de base (ex: http://localhost:8080/api/users)
     private baseUrl = `${environment.userServiceUrl}/users`;
 
-    constructor(private http: HttpClient) {
-        console.log('🔧 UserService initialized - Base URL:', this.baseUrl);
-    }
+    constructor(private http: HttpClient) {}
 
     // =====================================================
-    // CRUD BASIQUE
+    // LECTURE
     // =====================================================
 
     getAllUsers(): Observable<User[]> {
         return this.http.get<User[]>(this.baseUrl);
     }
 
+    // ✅ Utilisé par MyStudentsComponent pour charger la liste
     getUsersByRole(role: string): Observable<User[]> {
         return this.http.get<User[]>(`${this.baseUrl}/role/${role}`);
     }
@@ -32,44 +31,26 @@ export class UserService {
         return this.http.get<User>(`${this.baseUrl}/${id}`);
     }
 
+    // ✅ Utilisé par DashboardComponent pour les stats (Nouveaux candidats)
     getUsersByEtat(etat: string): Observable<User[]> {
         return this.http.get<User[]>(`${this.baseUrl}/etat/${etat}`);
     }
 
-    /**
-     * Créer un nouvel utilisateur (Admin seulement)
-     * Endpoint: POST /api/users
-     */
+    getDocumentUrl(filename: string): string {
+        return `${environment.userServiceUrl}/files/${filename}`;
+    }
+
+    // =====================================================
+    // ÉCRITURE
+    // =====================================================
+
     createUser(user: any): Observable<User> {
-        console.log('📤 UserService.createUser() - Sending:', user);
-        return this.http.post<User>(this.baseUrl, user).pipe(
-            tap({
-                next: (response) => console.log('✅ UserService.createUser() - Success:', response),
-                error: (err) => console.error('❌ UserService.createUser() - Error:', err)
-            })
-        );
+        return this.http.post<User>(this.baseUrl, user);
     }
 
-    /**
-     * Alias pour créer un directeur (utilise createUser en interne)
-     */
-    createDirecteur(directeurData: any): Observable<User> {
-        const data = {
-            ...directeurData,
-            role: 'DIRECTEUR_THESE',
-            etat: 'VALIDE'
-        };
-        return this.createUser(data);
-    }
-
+    // ✅ Peut être utilisé pour mettre à jour les prérequis (nbPublications, etc.)
     updateUser(id: number, user: Partial<User>): Observable<User> {
         return this.http.put<User>(`${this.baseUrl}/${id}`, user);
-    }
-
-    updateRole(id: number, newRole: string): Observable<User> {
-        return this.http.put<User>(`${this.baseUrl}/${id}/role`, {}, {
-            params: { newRole: newRole }
-        });
     }
 
     deleteUser(id: number): Observable<void> {
@@ -77,102 +58,30 @@ export class UserService {
     }
 
     // =====================================================
-    // WORKFLOW ADMIN - Validation candidatures
+    // WORKFLOW VALIDATION
     // =====================================================
 
-    /**
-     * L'Admin valide une candidature (passe à EN_ATTENTE_DIRECTEUR)
-     * SANS assigner de directeur (non recommandé)
-     */
-    validerCandidatureAdmin(id: number): Observable<User> {
-        console.log('📤 validerCandidatureAdmin() - ID:', id);
-        return this.http.put<User>(`${this.baseUrl}/${id}/validate-admin`, {}).pipe(
-            tap({
-                next: (res) => console.log('✅ Candidature validée:', res),
-                error: (err) => console.error('❌ Erreur validation:', err)
-            })
-        );
-    }
-
-    /**
-     * L'Admin valide une candidature ET assigne un directeur
-     * C'est la méthode recommandée !
-     */
     validerCandidatureAdminAvecDirecteur(id: number, directeurId: number): Observable<User> {
-        console.log('📤 validerCandidatureAdminAvecDirecteur() - Candidat:', id, 'Directeur:', directeurId);
         return this.http.put<User>(`${this.baseUrl}/${id}/validate-admin`, {}, {
             params: { directeurId: directeurId.toString() }
-        }).pipe(
-            tap({
-                next: (res) => console.log('✅ Candidature validée avec directeur:', res),
-                error: (err) => console.error('❌ Erreur validation avec directeur:', err)
-            })
-        );
+        });
     }
 
-    /**
-     * L'Admin refuse une candidature avec motif
-     */
     refuserCandidatureAdmin(id: number, motif: string): Observable<User> {
         return this.http.put<User>(`${this.baseUrl}/${id}/refuse`, {}, {
             params: { motif: motif }
         });
     }
 
-    // =====================================================
-    // WORKFLOW DIRECTEUR - Validation candidatures
-    // =====================================================
-
-    /**
-     * Le Directeur valide une candidature → VALIDE + rôle DOCTORANT
-     * (Version simple sans sujet de thèse)
-     */
-    validerCandidatureDirecteur(id: number): Observable<User> {
-        console.log('📤 validerCandidatureDirecteur() - ID:', id);
-        return this.http.put<User>(`${this.baseUrl}/${id}/validate-directeur`, {}).pipe(
-            tap({
-                next: (res) => console.log('✅ Candidature validée par directeur:', res),
-                error: (err) => console.error('❌ Erreur validation directeur:', err)
-            })
-        );
-    }
-
-    /**
-     * ✅ Le Directeur valide une candidature AVEC le sujet de thèse
-     * Le sujet est stocké dans le champ titreThese de l'utilisateur
-     *
-     * @param id - ID du candidat
-     * @param sujetThese - Sujet de thèse à assigner
-     */
     validerCandidatureDirecteurAvecSujet(id: number, sujetThese: string): Observable<User> {
-        console.log('📤 validerCandidatureDirecteurAvecSujet() - ID:', id, 'Sujet:', sujetThese);
         return this.http.put<User>(`${this.baseUrl}/${id}/validate-directeur`, {}, {
             params: { sujetThese: sujetThese }
-        }).pipe(
-            tap({
-                next: (res) => console.log('✅ Candidature validée avec sujet de thèse:', res),
-                error: (err) => console.error('❌ Erreur validation avec sujet:', err)
-            })
-        );
+        });
     }
 
-    /**
-     * Le Directeur refuse une candidature
-     */
     refuserCandidatureDirecteur(id: number, motif: string): Observable<User> {
         return this.http.put<User>(`${this.baseUrl}/${id}/refuse-directeur`, {}, {
             params: { motif: motif }
         });
-    }
-
-    // =====================================================
-    // DOCUMENTS
-    // =====================================================
-
-    /**
-     * Obtenir l'URL d'un document
-     */
-    getDocumentUrl(filename: string): string {
-        return `${environment.userServiceUrl}/files/${filename}`;
     }
 }

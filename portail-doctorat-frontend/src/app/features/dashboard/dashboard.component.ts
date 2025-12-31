@@ -20,6 +20,8 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
     } @else {
       <app-main-layout>
         <div class="dashboard-container">
+
+          <!-- HERO HEADER -->
           <div class="welcome-hero">
             <div class="hero-content">
               <div class="avatar-box"><span class="avatar-initials">{{ getInitials() }}</span></div>
@@ -28,9 +30,21 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
                 <h1 class="user-name">{{ currentUserData()?.prenom }} {{ currentUserData()?.nom }}</h1>
                 <div class="user-tags">
                   <span class="tag role"><i class="bi bi-mortarboard"></i>{{ getRoleLabel() }}</span>
-                  @if (isDoctorant() && getAnneeTheseNumber()) {
-                    <span class="tag year"><i class="bi bi-calendar3"></i>{{ getAnneeTheseNumber() }}{{ getAnneeTheseSuffix() }} année</span>
+
+                  @if (isDoctorant()) {
+                    <!-- Année de thèse -->
+                    @if (getAnneeTheseNumber()) {
+                      <span class="tag year"><i class="bi bi-calendar3"></i>{{ getAnneeTheseNumber() }}{{ getAnneeTheseSuffix() }} année</span>
+                    }
+
+                    <!-- ✅ NOUVEAU : Affichage du Directeur -->
+                    @if (directorName()) {
+                      <span class="tag director">
+                        <i class="bi bi-person-video3"></i> Dir: {{ directorName() }}
+                      </span>
+                    }
                   }
+
                   <span class="tag status"><i class="bi bi-check-circle"></i>Compte actif</span>
                 </div>
               </div>
@@ -38,14 +52,20 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
             <div class="hero-date"><i class="bi bi-calendar3"></i>{{ today | date:'EEEE d MMMM yyyy' }}</div>
           </div>
 
-          <!-- SECTION DOCTORANT -->
+          <!-- ============================================= -->
+          <!-- SECTION DOCTORANT                             -->
+          <!-- ============================================= -->
           @if (isDoctorant()) {
             <div class="thesis-card">
               <div class="thesis-header"><div class="thesis-icon"><i class="bi bi-journal-text"></i></div><h3>Mon Sujet de Thèse</h3></div>
               <div class="thesis-body">
                 @if (currentUserData()?.sujetThese || currentUserData()?.titreThese) {
                   <p class="thesis-text">{{ currentUserData()?.sujetThese || currentUserData()?.titreThese }}</p>
-                  <span class="thesis-meta"><i class="bi bi-person-check"></i>Assigné par votre directeur</span>
+                  <span class="thesis-meta">
+                    <i class="bi bi-person-check"></i>
+                    <!-- Affichage dynamique du directeur aussi ici -->
+                    Assigné par : {{ directorName() || 'votre directeur' }}
+                  </span>
                 } @else {
                   <div class="no-thesis"><i class="bi bi-journal-x"></i><p>Aucun sujet de thèse assigné</p><span>Votre directeur vous assignera un sujet lors de la validation.</span></div>
                 }
@@ -92,43 +112,178 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
             </div>
           }
 
-          <!-- SECTION DIRECTEUR -->
+          <!-- ============================================= -->
+          <!-- SECTION DIRECTEUR (Avec Ordre & Badges)       -->
+          <!-- ============================================= -->
           @if (isDirecteur()) {
-            <div class="stats-grid">
-              <div class="stat-card purple"><div class="stat-icon"><i class="bi bi-journal-check"></i></div><div class="stat-info"><span class="stat-label">Réinscriptions à valider</span><span class="stat-value">{{ stats().reinscriptionsEnAttente }}</span></div></div>
 
-              <!-- Carte Nouveaux Doctorants -->
-              <div class="stat-card warning"><div class="stat-icon"><i class="bi bi-folder-check"></i></div><div class="stat-info"><span class="stat-label">Nouveaux doctorants</span><span class="stat-value">{{ stats().aValider }}</span></div></div>
+            <!-- 1. GRILLE STATISTIQUES (Vue d'ensemble) -->
+            <div class="stats-grid five-cols">
 
-              <div class="stat-card orange"><div class="stat-icon"><i class="bi bi-clock-history"></i></div><div class="stat-info"><span class="stat-label">Dérogations à traiter</span><span class="stat-value">{{ stats().derogationsEnAttente }}</span></div></div>
-              <div class="stat-card blue"><div class="stat-icon"><i class="bi bi-mortarboard"></i></div><div class="stat-info"><span class="stat-label">Soutenances à valider</span><span class="stat-value">{{ stats().soutenances }}</span></div></div>
+              <!-- 1. Doctorants -->
+              <div class="stat-card purple">
+                <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Mes Doctorants</span>
+                  <span class="stat-value">{{ stats().activeStudents }}</span>
+                </div>
+              </div>
+
+              <!-- 2. Nouveaux -->
+              <div class="stat-card warning">
+                <div class="stat-icon"><i class="bi bi-folder-check"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Nouveaux</span>
+                  <span class="stat-value">{{ stats().aValider }}</span>
+                </div>
+              </div>
+
+              <!-- 3. Réinscriptions -->
+              <div class="stat-card blue">
+                <div class="stat-icon"><i class="bi bi-journal-check"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Réinscriptions</span>
+                  <span class="stat-value">{{ stats().reinscriptionsEnAttente }}</span>
+                </div>
+              </div>
+
+              <!-- 4. Dérogations -->
+              <div class="stat-card orange">
+                <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Dérogations</span>
+                  <span class="stat-value">{{ stats().derogationsEnAttente }}</span>
+                </div>
+              </div>
+
+              <!-- 5. Soutenances -->
+              <div class="stat-card green">
+                <div class="stat-icon"><i class="bi bi-award"></i></div>
+                <div class="stat-info">
+                  <span class="stat-label">Soutenances</span>
+                  <span class="stat-value">{{ stats().soutenances }}</span>
+                </div>
+              </div>
             </div>
 
-            @if (stats().reinscriptionsEnAttente > 0) {
-              <div class="alert-banner info"><div class="alert-icon"><i class="bi bi-journal-check"></i></div><div class="alert-content"><strong>{{ stats().reinscriptionsEnAttente }} demande(s) de réinscription en attente</strong><p>Vos doctorants ont soumis des demandes de réinscription qui nécessitent votre validation.</p></div><a routerLink="/director/reinscriptions" class="alert-action">Traiter les demandes</a></div>
-            }
+            <!-- 2. BANNIÈRES D'ALERTE (S'affichent si besoin) -->
+            <div class="alerts-container">
+              @if (stats().aValider > 0) {
+                <div class="alert-banner warning">
+                  <div class="alert-icon"><i class="bi bi-folder-check"></i></div>
+                  <div class="alert-content">
+                    <strong>{{ stats().aValider }} nouveau(x) dossier(s) en attente</strong>
+                    <p>Des dossiers de première inscription nécessitent votre validation.</p>
+                  </div>
+                  <a routerLink="/validations" class="alert-action">Traiter</a>
+                </div>
+              }
 
-            @if (stats().aValider > 0) {
-              <div class="alert-banner warning"><div class="alert-icon"><i class="bi bi-folder-check"></i></div><div class="alert-content"><strong>{{ stats().aValider }} nouveau(x) dossier(s) d'inscription en attente</strong><p>Des dossiers de première inscription nécessitent votre validation.</p></div><a routerLink="/validations" class="alert-action">Traiter les dossiers</a></div>
-            }
+              @if (stats().reinscriptionsEnAttente > 0) {
+                <div class="alert-banner info">
+                  <div class="alert-icon"><i class="bi bi-journal-check"></i></div>
+                  <div class="alert-content">
+                    <strong>{{ stats().reinscriptionsEnAttente }} demande(s) de réinscription</strong>
+                    <p>Vos doctorants ont soumis des demandes de réinscription.</p>
+                  </div>
+                  <a routerLink="/director/reinscriptions" class="alert-action">Traiter</a>
+                </div>
+              }
 
-            @if (stats().derogationsEnAttente > 0) {
-              <div class="alert-banner warning"><div class="alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div><div class="alert-content"><strong>{{ stats().derogationsEnAttente }} demande(s) de dérogation en attente</strong><p>Vos doctorants ont soumis des demandes de prolongation qui nécessitent votre validation.</p></div><a routerLink="/director/derogations" class="alert-action">Traiter les demandes</a></div>
-            }
+              @if (stats().derogationsEnAttente > 0) {
+                <div class="alert-banner orange">
+                  <div class="alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                  <div class="alert-content">
+                    <strong>{{ stats().derogationsEnAttente }} dérogation(s) en attente</strong>
+                    <p>Vos doctorants ont soumis des demandes de prolongation.</p>
+                  </div>
+                  <a routerLink="/director/derogations" class="alert-action">Traiter</a>
+                </div>
+              }
 
-            @if (stats().soutenances > 0) {
-              <div class="alert-banner blue"><div class="alert-icon"><i class="bi bi-award"></i></div><div class="alert-content"><strong>{{ stats().soutenances }} demande(s) de soutenance en attente</strong><p>Des demandes de soutenance de vos doctorants nécessitent votre validation.</p></div><a routerLink="/director/soutenances" class="alert-action">Traiter les demandes</a></div>
-            }
+              @if (stats().soutenances > 0) {
+                <div class="alert-banner green">
+                  <div class="alert-icon"><i class="bi bi-award"></i></div>
+                  <div class="alert-content">
+                    <strong>{{ stats().soutenances }} soutenance(s) en attente</strong>
+                    <p>Des demandes de soutenance nécessitent votre validation.</p>
+                  </div>
+                  <a routerLink="/director/soutenances" class="alert-action">Traiter</a>
+                </div>
+              }
+            </div>
 
             <h4 class="section-title"><i class="bi bi-lightning-charge me-2"></i>Actions Rapides</h4>
-            <div class="actions-grid">
-              <a routerLink="/director/reinscriptions" class="action-card purple"><div class="action-icon"><i class="bi bi-journal-check"></i></div><div class="action-content"><h5>Réinscriptions</h5><p>{{ stats().reinscriptionsEnAttente }} demande(s) à valider</p></div>@if (stats().reinscriptionsEnAttente > 0) { <span class="action-badge">{{ stats().reinscriptionsEnAttente }}</span> }<i class="bi bi-arrow-right"></i></a>
 
-              <!-- Bouton Nouveaux Doctorants -->
-              <a routerLink="/validations" class="action-card green"><div class="action-icon"><i class="bi bi-check2-circle"></i></div><div class="action-content"><h5>Nouveaux Doctorants</h5><p>{{ stats().aValider }} dossier(s) en attente</p></div>@if (stats().aValider > 0) { <span class="action-badge">{{ stats().aValider }}</span> }<i class="bi bi-arrow-right"></i></a>
+            <!-- 3. ACTIONS GRID (Boutons cliquables avec BADGES) -->
+            <div class="actions-grid five-cols">
 
-              <a routerLink="/director/derogations" class="action-card orange"><div class="action-icon"><i class="bi bi-clock-history"></i></div><div class="action-content"><h5>Dérogations</h5><p>{{ stats().derogationsEnAttente }} demande(s) à traiter</p></div>@if (stats().derogationsEnAttente > 0) { <span class="action-badge">{{ stats().derogationsEnAttente }}</span> }<i class="bi bi-arrow-right"></i></a>
-              <a routerLink="/director/soutenances" class="action-card blue"><div class="action-icon"><i class="bi bi-mortarboard"></i></div><div class="action-content"><h5>Soutenances</h5><p>{{ stats().soutenances }} demande(s) à traiter</p></div>@if (stats().soutenances > 0) { <span class="action-badge">{{ stats().soutenances }}</span> }<i class="bi bi-arrow-right"></i></a>
+              <!-- 1. Mes Doctorants -->
+              <a routerLink="/director/my-students" class="action-card purple">
+                <div class="action-icon"><i class="bi bi-people-fill"></i></div>
+                <div class="action-content">
+                  <h5>Mes Doctorants</h5>
+                  <p>Suivi et progression</p>
+                </div>
+                <i class="bi bi-arrow-right"></i>
+              </a>
+
+              <!-- 2. Nouveaux -->
+              <a routerLink="/validations" class="action-card warning position-relative">
+                <div class="action-icon"><i class="bi bi-check2-circle"></i></div>
+                <div class="action-content">
+                  <h5>Nouveaux</h5>
+                  <p>{{ stats().aValider }} dossier(s)</p>
+                </div>
+                <!-- BADGE -->
+                @if (stats().aValider > 0) {
+                  <span class="action-badge">{{ stats().aValider }}</span>
+                }
+                <i class="bi bi-arrow-right"></i>
+              </a>
+
+              <!-- 3. Réinscriptions -->
+              <a routerLink="/director/reinscriptions" class="action-card blue position-relative">
+                <div class="action-icon"><i class="bi bi-journal-check"></i></div>
+                <div class="action-content">
+                  <h5>Réinscriptions</h5>
+                  <p>{{ stats().reinscriptionsEnAttente }} demande(s)</p>
+                </div>
+                <!-- BADGE -->
+                @if (stats().reinscriptionsEnAttente > 0) {
+                  <span class="action-badge">{{ stats().reinscriptionsEnAttente }}</span>
+                }
+                <i class="bi bi-arrow-right"></i>
+              </a>
+
+              <!-- 4. Dérogations -->
+              <a routerLink="/director/derogations" class="action-card orange position-relative">
+                <div class="action-icon"><i class="bi bi-clock-history"></i></div>
+                <div class="action-content">
+                  <h5>Dérogations</h5>
+                  <p>{{ stats().derogationsEnAttente }} demande(s)</p>
+                </div>
+                <!-- BADGE -->
+                @if (stats().derogationsEnAttente > 0) {
+                  <span class="action-badge">{{ stats().derogationsEnAttente }}</span>
+                }
+                <i class="bi bi-arrow-right"></i>
+              </a>
+
+              <!-- 5. Soutenances -->
+              <a routerLink="/director/soutenances" class="action-card green position-relative">
+                <div class="action-icon"><i class="bi bi-mortarboard"></i></div>
+                <div class="action-content">
+                  <h5>Soutenances</h5>
+                  <p>{{ stats().soutenances }} demande(s)</p>
+                </div>
+                <!-- BADGE -->
+                @if (stats().soutenances > 0) {
+                  <span class="action-badge">{{ stats().soutenances }}</span>
+                }
+                <i class="bi bi-arrow-right"></i>
+              </a>
+
             </div>
           }
         </div>
@@ -136,7 +291,7 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
     }
   `,
   styles: [`
-    .dashboard-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+    .dashboard-container { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem 3rem; }
     .welcome-hero { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
     .hero-content { display: flex; align-items: center; gap: 1.5rem; }
     .avatar-box { width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 20px; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.3); }
@@ -147,7 +302,13 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
     .user-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .tag { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.75rem; background: rgba(255,255,255,0.15); border-radius: 50px; font-size: 0.8rem; font-weight: 500; color: white; }
     .tag.status { background: rgba(34,197,94,0.3); }
+
+    /* Style pour le tag directeur */
+    .tag.director { background: rgba(255, 255, 255, 0.25); border: 1px solid rgba(255,255,255,0.3); }
+
     .hero-date { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.15); border-radius: 12px; color: white; font-weight: 500; }
+
+    /* Thesis Card (Doctorant) */
     .thesis-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 1.5rem; }
     .thesis-header { display: flex; align-items: center; gap: 0.75rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-bottom: 1px solid #e2e8f0; }
     .thesis-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem; }
@@ -160,37 +321,58 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
     .no-thesis i { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 0.75rem; display: block; }
     .no-thesis p { margin: 0; font-weight: 600; color: #475569; }
     .no-thesis span { font-size: 0.85rem; }
-    .alert-banner { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; }
+
+    /* Alert Banners */
+    .alert-banner { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 16px; margin-bottom: 1rem; }
     .alert-banner.warning { background: #fef3c7; border: 1px solid #fcd34d; }
     .alert-banner.danger { background: #fee2e2; border: 1px solid #fca5a5; }
     .alert-banner.info { background: #f3e8ff; border: 1px solid #c4b5fd; }
     .alert-banner.blue { background: #eff6ff; border: 1px solid #93c5fd; }
-    .alert-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .alert-banner.green { background: #dcfce7; border: 1px solid #86efac; }
+    .alert-banner.orange { background: #ffedd5; border: 1px solid #fdba74; }
+    .alert-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
     .alert-banner.warning .alert-icon { background: #f59e0b; color: white; }
     .alert-banner.danger .alert-icon { background: #ef4444; color: white; }
     .alert-banner.info .alert-icon { background: #8b5cf6; color: white; }
     .alert-banner.blue .alert-icon { background: #3b82f6; color: white; }
+    .alert-banner.green .alert-icon { background: #22c55e; color: white; }
+    .alert-banner.orange .alert-icon { background: #f97316; color: white; }
     .alert-content { flex: 1; }
-    .alert-content strong { display: block; margin-bottom: 0.25rem; }
-    .alert-content p { margin: 0; font-size: 0.875rem; opacity: 0.8; }
-    .alert-action { padding: 0.5rem 1rem; background: white; border-radius: 8px; font-weight: 600; font-size: 0.85rem; text-decoration: none; color: inherit; white-space: nowrap; }
+    .alert-content strong { display: block; margin-bottom: 0.25rem; font-size: 0.95rem; }
+    .alert-content p { margin: 0; font-size: 0.85rem; opacity: 0.9; }
+    .alert-action { padding: 0.5rem 1rem; background: white; border-radius: 8px; font-weight: 600; font-size: 0.85rem; text-decoration: none; color: inherit; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
     .success-banner { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; background: linear-gradient(135deg, #dcfce7, #bbf7d0); border: 1px solid #86efac; }
     .success-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: #22c55e; color: white; }
     .success-content { flex: 1; color: #166534; }
     .success-content strong { display: block; margin-bottom: 0.25rem; }
     .success-content p { margin: 0; font-size: 0.875rem; }
     .success-action { padding: 0.6rem 1.25rem; background: #22c55e; color: white; border-radius: 8px; font-weight: 600; font-size: 0.85rem; text-decoration: none; }
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-    .stat-card { background: white; border-radius: 16px; padding: 1.25rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; }
+
+    /* Stats & Actions Grids */
+    .stats-grid { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+    .actions-grid { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+
+    /* Config par défaut (Doctorant - 4 colonnes) */
+    .stats-grid:not(.five-cols), .actions-grid:not(.five-cols) { grid-template-columns: repeat(4, 1fr); }
+
+    /* Config pour Directeur (5 colonnes) */
+    .stats-grid.five-cols, .actions-grid.five-cols { grid-template-columns: repeat(5, 1fr); }
+
+    /* Stat Card */
+    .stat-card { background: white; border-radius: 16px; padding: 1.25rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
     .stat-card.complete { border-color: #86efac; background: linear-gradient(135deg, white, #f0fdf4); }
-    .stat-card .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem; }
-    .stat-card .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-    .stat-card .stat-value { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .stat-card .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 0.75rem; }
+    .stat-card .stat-info { width: 100%; }
+    .stat-card .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; display: block; margin-bottom: 0.25rem; }
+    .stat-card .stat-value { font-size: 1.75rem; font-weight: 800; line-height: 1; color: #1e293b; }
     .stat-card .stat-value sup { font-size: 0.8rem; font-weight: 600; }
     .stat-card .stat-total { font-size: 0.9rem; color: #94a3b8; font-weight: 500; }
-    .stat-card .stat-progress { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 1rem; overflow: hidden; }
+    .stat-card .stat-progress { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 1rem; overflow: hidden; width: 100%; }
     .stat-card .progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
     .complete-badge { position: absolute; top: 0.75rem; right: 0.75rem; color: #22c55e; font-size: 1.25rem; }
+
+    /* Couleurs Stat Cards */
     .stat-card.year-green .stat-icon { background: #dcfce7; color: #16a34a; } .stat-card.year-green .stat-value { color: #16a34a; } .stat-card.year-green .progress-fill { background: #16a34a; }
     .stat-card.year-yellow .stat-icon { background: #fef3c7; color: #d97706; } .stat-card.year-yellow .stat-value { color: #d97706; } .stat-card.year-yellow .progress-fill { background: #d97706; }
     .stat-card.year-orange .stat-icon { background: #ffedd5; color: #ea580c; } .stat-card.year-orange .stat-value { color: #ea580c; } .stat-card.year-orange .progress-fill { background: #ea580c; }
@@ -198,28 +380,55 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
     .stat-card.publications .stat-icon { background: #dbeafe; color: #2563eb; } .stat-card.publications .stat-value { color: #2563eb; } .stat-card.publications .progress-fill { background: #2563eb; }
     .stat-card.conferences .stat-icon { background: #f3e8ff; color: #9333ea; } .stat-card.conferences .stat-value { color: #9333ea; } .stat-card.conferences .progress-fill { background: #9333ea; }
     .stat-card.formation .stat-icon { background: #fce7f3; color: #db2777; } .stat-card.formation .stat-value { color: #db2777; } .stat-card.formation .progress-fill { background: #db2777; }
+
     .stat-card.warning .stat-icon { background: #fef3c7; color: #d97706; } .stat-card.warning .stat-value { color: #d97706; }
     .stat-card.orange .stat-icon { background: #ffedd5; color: #ea580c; } .stat-card.orange .stat-value { color: #ea580c; }
     .stat-card.purple .stat-icon { background: #f3e8ff; color: #9333ea; } .stat-card.purple .stat-value { color: #9333ea; }
     .stat-card.blue .stat-icon { background: #dbeafe; color: #2563eb; } .stat-card.blue .stat-value { color: #2563eb; }
-    .section-title { font-weight: 700; color: #1e293b; display: flex; align-items: center; margin-bottom: 1rem; }
+    .stat-card.green .stat-icon { background: #dcfce7; color: #16a34a; } .stat-card.green .stat-value { color: #16a34a; }
+
+    .section-title { font-weight: 700; color: #1e293b; display: flex; align-items: center; margin-bottom: 1rem; font-size: 1.1rem; }
     .section-title i { color: #6366f1; }
-    .actions-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+    /* Action Cards */
     .action-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: white; border-radius: 16px; text-decoration: none; color: inherit; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: all 0.3s; position: relative; }
     .action-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
     .action-card.disabled { opacity: 0.6; pointer-events: none; }
+
     .action-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
     .action-content { flex: 1; }
     .action-content h5 { margin: 0 0 0.25rem; font-weight: 700; font-size: 1rem; color: #1e293b; }
     .action-content p { margin: 0; font-size: 0.8rem; color: #64748b; }
-    .action-card > .bi-arrow-right { color: #cbd5e1; font-size: 1.25rem; }
-    .action-badge { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
-    .action-badge-ready { position: absolute; top: -8px; right: -8px; background: #22c55e; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
+    .action-card > .bi-arrow-right { color: #cbd5e1; font-size: 1.25rem; margin-left: auto; }
+
+    /* BADGES (Style Corrigé) */
+    .action-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #ef4444;
+      color: white;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 6px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+      border: 2px solid white;
+    }
+    .action-badge-ready { position: absolute; top: -8px; right: -8px; background: #22c55e; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; border: 2px solid white; }
+
     .action-card.blue .action-icon { background: #dbeafe; color: #2563eb; }
     .action-card.purple .action-icon { background: #f3e8ff; color: #9333ea; }
     .action-card.orange .action-icon { background: #ffedd5; color: #ea580c; }
     .action-card.green .action-icon { background: #dcfce7; color: #16a34a; }
+    .action-card.warning .action-icon { background: #fef3c7; color: #d97706; }
     .action-card.gray .action-icon { background: #f1f5f9; color: #64748b; }
+
     .profile-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; }
     .profile-header { display: flex; align-items: center; gap: 0.75rem; padding: 1.25rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
     .profile-icon { width: 40px; height: 40px; background: #dbeafe; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #2563eb; font-size: 1.1rem; }
@@ -236,14 +445,28 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
     .item-value.mono { font-family: monospace; }
     .status-tag { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
     .status-tag.success { background: #dcfce7; color: #15803d; }
-    @media (max-width: 992px) { .stats-grid, .actions-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 768px) { .welcome-hero { flex-direction: column; text-align: center; gap: 1.5rem; } .hero-content { flex-direction: column; } .stats-grid, .actions-grid { grid-template-columns: 1fr; } .profile-grid { grid-template-columns: 1fr; } }
+
+    @media (max-width: 1200px) {
+      .stats-grid.five-cols, .actions-grid.five-cols { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 992px) {
+      .stats-grid:not(.five-cols), .actions-grid:not(.five-cols) { grid-template-columns: repeat(2, 1fr); }
+      .stats-grid.five-cols, .actions-grid.five-cols { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .welcome-hero { flex-direction: column; text-align: center; gap: 1.5rem; }
+      .hero-content { flex-direction: column; }
+      .stats-grid, .actions-grid, .stats-grid.five-cols, .actions-grid.five-cols { grid-template-columns: 1fr; }
+      .profile-grid { grid-template-columns: 1fr; }
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
-  stats = signal({ inscriptions: 0, aValider: 0, derogationsEnAttente: 0, soutenances: 0, reinscriptionsEnAttente: 0 });
+  // Ajout de 'activeStudents' dans les stats
+  stats = signal({ inscriptions: 0, aValider: 0, derogationsEnAttente: 0, soutenances: 0, reinscriptionsEnAttente: 0, activeStudents: 0 });
   today = new Date();
   currentUserData = signal<any>(null);
+  directorName = signal<string | null>(null); // ✅ Signal pour stocker le nom du directeur
   isRefreshing = signal(false);
 
   constructor(
@@ -260,14 +483,45 @@ export class DashboardComponent implements OnInit {
   loadUserFromDB(): void {
     const user = this.authService.currentUser();
     if (user?.id) {
-      this.userService.getUserById(user.id).subscribe({ next: (d) => { this.currentUserData.set(d); this.authService.updateCurrentUser(d); }, error: () => this.currentUserData.set(user) });
+      this.userService.getUserById(user.id).subscribe({ next: (d) => {
+          this.currentUserData.set(d);
+          this.authService.updateCurrentUser(d);
+
+          // ✅ Récupérer le nom du directeur si c'est un doctorant
+          if (d.role === Role.DOCTORANT && d.directeurId) {
+            this.loadDirectorName(d.directeurId);
+          }
+
+        }, error: () => this.currentUserData.set(user) });
     } else { this.currentUserData.set(user); }
+  }
+
+  // ✅ Nouvelle méthode pour charger le directeur
+  loadDirectorName(directeurId: number) {
+    this.userService.getUserById(directeurId).subscribe({
+      next: (dir) => {
+        this.directorName.set(`${dir.prenom} ${dir.nom}`);
+      },
+      error: () => this.directorName.set('Non trouvé')
+    });
   }
 
   refreshUserData(): void {
     this.isRefreshing.set(true);
     const user = this.authService.currentUser();
-    if (user?.id) { this.userService.getUserById(user.id).subscribe({ next: (d) => { this.currentUserData.set(d); this.authService.updateCurrentUser(d); this.isRefreshing.set(false); }, error: () => this.isRefreshing.set(false) }); }
+    if (user?.id) {
+      this.userService.getUserById(user.id).subscribe({ next: (d) => {
+          this.currentUserData.set(d);
+          this.authService.updateCurrentUser(d);
+
+          // Recharger aussi le directeur au cas où
+          if (d.role === Role.DOCTORANT && d.directeurId) {
+            this.loadDirectorName(d.directeurId);
+          }
+
+          this.isRefreshing.set(false);
+        }, error: () => this.isRefreshing.set(false) });
+    }
     else { this.isRefreshing.set(false); }
   }
 
@@ -295,7 +549,7 @@ export class DashboardComponent implements OnInit {
       this.inscriptionService.getByDoctorant(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, inscriptions: d.length })), error: () => {} });
     }
     else if (this.isDirecteur()) {
-      // ✅ MODIFICATION ICI : Utiliser le UserService pour compter les nouveaux doctorants
+      // 1. Récupérer les nouveaux candidats ("EN_ATTENTE_DIRECTEUR")
       this.userService.getUsersByEtat('EN_ATTENTE_DIRECTEUR').subscribe({
         next: (users) => {
           const myCandidates = users.filter(user => user.directeurId === u.id);
@@ -304,7 +558,15 @@ export class DashboardComponent implements OnInit {
         error: () => {}
       });
 
-      // Le reste ne change pas
+      // 2. Récupérer le nombre de doctorants ACTIFS ("DOCTORANT") assignés à ce directeur
+      this.userService.getUsersByRole('DOCTORANT').subscribe({
+        next: (users) => {
+          const myStudents = users.filter(user => user.directeurId === u.id);
+          this.stats.update(s => ({ ...s, activeStudents: myStudents.length }));
+        },
+        error: () => {}
+      });
+
       this.inscriptionService.getReinscritionsEnAttenteDirecteur(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, reinscriptionsEnAttente: d.length })), error: () => {} });
       this.derogationService.getDerogationsDirecteur(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, derogationsEnAttente: d.filter((x: any) => x.statut === 'EN_ATTENTE_DIRECTEUR' || x.statut === 'EN_ATTENTE').length })), error: () => {} });
       this.soutenanceService.getSoutenancesByDirecteur(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, soutenances: d.filter((x: any) => x.statut === 'SOUMIS' || x.statut === 'AUTORISEE').length })), error: () => {} });

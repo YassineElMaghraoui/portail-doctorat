@@ -70,18 +70,18 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
           <div class="tabs">
             <button class="tab-btn" [class.active]="activeTab === 'CANDIDATS'" (click)="setTab('CANDIDATS')">
               <i class="bi bi-person-lines-fill"></i>
-              Candidatures
+              Candidatures à traiter
               @if (candidats().length > 0) {
                 <span class="tab-badge">{{ candidats().length }}</span>
               }
             </button>
             <button class="tab-btn" [class.active]="activeTab === 'DIRECTEURS'" (click)="setTab('DIRECTEURS')">
               <i class="bi bi-person-video3"></i>
-              Directeurs
+              Liste des Directeurs
             </button>
             <button class="tab-btn" [class.active]="activeTab === 'DOCTORANTS'" (click)="setTab('DOCTORANTS')">
               <i class="bi bi-mortarboard-fill"></i>
-              Doctorants
+              Liste des Doctorants
             </button>
           </div>
         </div>
