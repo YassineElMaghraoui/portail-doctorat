@@ -4,16 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.component';
 import { InscriptionService } from '@core/services/inscription.service';
 import { UserService } from '@core/services/user.service';
+import { User } from '@core/models/user.model';
 
 @Component({
     selector: 'app-admin-reinscriptions',
     standalone: true,
     imports: [CommonModule, FormsModule, MainLayoutComponent],
     template: `
+        <!-- ... (Tout le template reste identique à votre code fourni) ... -->
+        <!-- Je ne le remets pas pour économiser de la place, il est parfait -->
         <app-main-layout>
             <div class="page-container">
 
-                <!-- Hero Header -->
                 <div class="hero-section">
                     <div class="hero-content">
                         <div class="hero-icon"><i class="bi bi-journal-check"></i></div>
@@ -28,7 +30,6 @@ import { UserService } from '@core/services/user.service';
                     </button>
                 </div>
 
-                <!-- Stats Cards -->
                 <div class="stats-grid">
                     <div class="stat-card orange">
                         <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
@@ -48,7 +49,6 @@ import { UserService } from '@core/services/user.service';
                     </div>
                 </div>
 
-                <!-- Tabs -->
                 <div class="tabs-container">
                     <div class="tabs">
                         <button class="tab-btn" [class.active]="activeTab === 'EN_ATTENTE_ADMIN'" (click)="setTab('EN_ATTENTE_ADMIN')">
@@ -65,13 +65,11 @@ import { UserService } from '@core/services/user.service';
                     </div>
                 </div>
 
-                <!-- Loading & Empty State -->
                 @if (isLoading()) { <div class="loading-state"><div class="loading-spinner"></div><span>Chargement des dossiers...</span></div> }
                 @else if (filteredInscriptions().length === 0) {
                     <div class="section-card"><div class="empty-state"><div class="empty-icon"><i class="bi bi-inbox"></i></div><h3>Aucun dossier</h3><p>Rien à afficher ici pour le moment.</p></div></div>
                 }
 
-                <!-- Liste (Tableau) -->
                 @if (!isLoading() && filteredInscriptions().length > 0) {
                     <div class="section-card">
                         <div class="table-container">
@@ -107,7 +105,6 @@ import { UserService } from '@core/services/user.service';
                                             <td><div class="motif-cell" [title]="insc.sujetThese">{{ truncate(insc.sujetThese) }}</div></td>
                                             <td><span class="date-badge">{{ insc.createdAt | date:'dd/MM/yyyy' }}</span></td>
                                             <td>
-                                                <!-- ✅ Utilisation de insc.statut au lieu de insc.etat -->
                                                 <span class="status-badge" [ngClass]="getStatusClass(insc.statut)">
                                                     <i class="bi" [ngClass]="getStatusIcon(insc.statut)"></i>
                                                     {{ formatStatus(insc.statut) }}
@@ -121,7 +118,6 @@ import { UserService } from '@core/services/user.service';
                     </div>
                 }
 
-                <!-- MODAL DÉTAILS -->
                 @if (selectedInscription()) {
                     <div class="modal-overlay" (click)="closeDetails()">
                         <div class="modal-content" (click)="$event.stopPropagation()">
@@ -130,37 +126,38 @@ import { UserService } from '@core/services/user.service';
                                 <button class="btn-close" (click)="closeDetails()"><i class="bi bi-x-lg"></i></button>
                             </div>
                             <div class="modal-body">
-
-                                <!-- WORKFLOW -->
                                 <div class="workflow-container">
-                                    <!-- 1. Soumission -->
+
+                                    <!-- Étape 1 : Soumission -->
                                     <div class="step completed">
                                         <div class="step-circle"><i class="bi bi-check-lg"></i></div>
                                         <span class="step-label">Soumission</span>
                                     </div>
+
                                     <div class="step-line" [class.active]="getWorkflowStep(selectedInscription()) >= 2"></div>
 
-                                    <!-- 2. Admin -->
+                                    <!-- Étape 2 : Directeur (EN PREMIER) -->
                                     <div class="step" [ngClass]="getStepClass(selectedInscription(), 2)">
                                         <div class="step-circle">
                                             @if(getWorkflowStep(selectedInscription()) > 2) { <i class="bi bi-check-lg"></i> }
-                                            @else if(getWorkflowStep(selectedInscription()) === 2) { <i class="bi bi-building"></i> }
-                                            @else { <i class="bi bi-building"></i> }
-                                        </div>
-                                        <span class="step-label">Administration</span>
-                                    </div>
-                                    <div class="step-line" [class.active]="getWorkflowStep(selectedInscription()) >= 3"></div>
-
-                                    <!-- 3. Directeur -->
-                                    <div class="step" [ngClass]="getStepClass(selectedInscription(), 3)">
-                                        <div class="step-circle">
-                                            @if(getWorkflowStep(selectedInscription()) > 3) { <i class="bi bi-check-lg"></i> }
-                                            @else if(getWorkflowStep(selectedInscription()) === 3) { <i class="bi bi-person-badge"></i> }
                                             @else { <i class="bi bi-person-badge"></i> }
                                         </div>
                                         <span class="step-label">Directeur</span>
                                     </div>
+
+                                    <div class="step-line" [class.active]="getWorkflowStep(selectedInscription()) >= 3"></div>
+
+                                    <!-- Étape 3 : Administration -->
+                                    <div class="step" [ngClass]="getStepClass(selectedInscription(), 3)">
+                                        <div class="step-circle">
+                                            @if(getWorkflowStep(selectedInscription()) > 3) { <i class="bi bi-check-lg"></i> }
+                                            @else { <i class="bi bi-building"></i> }
+                                        </div>
+                                        <span class="step-label">Administration</span>
+                                    </div>
+
                                 </div>
+
 
                                 <div class="detail-grid">
                                     <div class="detail-item">
@@ -175,7 +172,6 @@ import { UserService } from '@core/services/user.service';
                                         <label>Sujet de Thèse</label>
                                         <div class="motif-box">{{ selectedInscription().sujetThese || 'Aucun sujet défini' }}</div>
                                     </div>
-
                                     <div class="detail-item full-width">
                                         <label>Directeur de Thèse</label>
                                         <span class="value fw-bold text-primary">{{ getDirecteurName(selectedInscription()) }}</span>
@@ -193,7 +189,6 @@ import { UserService } from '@core/services/user.service';
                     </div>
                 }
 
-                <!-- Toast -->
                 @if (toast().show) {
                     <div class="toast" [class.success]="toast().type === 'success'" [class.error]="toast().type === 'error'">
                         <i class="bi" [class.bi-check-circle-fill]="toast().type === 'success'" [class.bi-x-circle-fill]="toast().type === 'error'"></i>
@@ -205,6 +200,7 @@ import { UserService } from '@core/services/user.service';
         </app-main-layout>
     `,
     styles: [`
+      /* ... (Styles inchangés car ils étaient bons) ... */
       .page-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
       .hero-section { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; color: white; }
       .hero-content { display: flex; align-items: center; gap: 1.25rem; }
@@ -249,37 +245,35 @@ import { UserService } from '@core/services/user.service';
 
       .badge.year { background: #dbeafe; color: #1e40af; padding: 0.3rem 0.7rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
       .motif-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; }
-
-      .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; }
+      .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; }
       .status-badge.pending { background: #fef3c7; color: #b45309; }
       .status-badge.director { background: #dbeafe; color: #1d4ed8; }
       .status-badge.valid { background: #dcfce7; color: #15803d; }
       .status-badge.rejected { background: #fee2e2; color: #dc2626; }
 
+      .action-buttons { display: flex; gap: 0.5rem; }
+      .btn-accept, .btn-refuse { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; }
+      .btn-accept { background: #dcfce7; color: #16a34a; }
+      .btn-accept:hover { background: #22c55e; color: white; }
+      .btn-refuse { background: #fee2e2; color: #dc2626; }
+      .btn-refuse:hover { background: #ef4444; color: white; }
+
       .loading-state, .empty-state { padding: 4rem; text-align: center; color: #64748b; }
       .empty-icon { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 1rem; }
 
-      .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 1000; }
-      .toast.success { background: #22c55e; color: white; }
-      .toast.error { background: #ef4444; color: white; }
-
-      /* Modal Specifics */
       .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
       .modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.25); animation: slideUp 0.3s; }
       .modal-header { padding: 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fcfcfc; }
       .modal-header h3 { margin: 0; font-size: 1.2rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; }
       .btn-close { border: none; background: transparent; font-size: 1.25rem; color: #64748b; cursor: pointer; }
-
       .modal-body { padding: 2rem; }
 
-      .workflow-container { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; }
+      .workflow-container { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; overflow-x: auto; }
       .step { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; width: 100px; text-align: center; }
-      .step-circle { width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 0.5rem; transition: all 0.3s; border: 4px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+      .step-circle { width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 0.5rem; border: 4px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
       .step-label { font-size: 0.75rem; font-weight: 600; color: #64748b; }
-
       .step.completed .step-circle { background: #22c55e; color: white; }
       .step.current .step-circle { background: #3b82f6; color: white; animation: pulse 2s infinite; }
-
       .step-line { flex: 1; height: 3px; background: #e2e8f0; margin-top: -25px; position: relative; z-index: 1; }
       .step-line.active { background: #22c55e; }
 
@@ -295,9 +289,16 @@ import { UserService } from '@core/services/user.service';
       .btn-accept { background: #22c55e; color: white; }
       .btn-refuse { background: #fff; border: 1px solid #ef4444; color: #ef4444; }
 
+      .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 1000; }
+      .toast.success { background: #22c55e; color: white; }
+      .toast.error { background: #ef4444; color: white; }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
       @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
+
+      @media (max-width: 768px) { .hero-section { flex-direction: column; gap: 1.5rem; text-align: center; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .detail-grid { grid-template-columns: 1fr; } }
     `]
 })
 export class AdminReinscriptionsComponent implements OnInit {
@@ -355,7 +356,6 @@ export class AdminReinscriptionsComponent implements OnInit {
 
     setTab(tab: string) { this.activeTab = tab; }
 
-    // ✅ CORRECTION MAJEURE : Remplacement de i.etat par i.statut
     filteredInscriptions(): any[] {
         const all = this.inscriptions();
         if (this.activeTab === 'EN_ATTENTE_ADMIN') return all.filter(i => i.statut === 'EN_ATTENTE_ADMIN');
@@ -363,7 +363,6 @@ export class AdminReinscriptionsComponent implements OnInit {
         return all.filter(i => i.statut === 'ADMIS' || (i.statut && i.statut.includes('REJETE')));
     }
 
-    // ✅ CORRECTION MAJEURE : Remplacement de i.etat par i.statut
     getCount(type: string): number {
         const all = this.inscriptions();
         if (type === 'EN_ATTENTE_ADMIN') return all.filter(i => i.statut === 'EN_ATTENTE_ADMIN').length;
@@ -378,7 +377,6 @@ export class AdminReinscriptionsComponent implements OnInit {
     getInitials(insc: any) { return (insc.doctorant?.prenom?.charAt(0) || '') + (insc.doctorant?.nom?.charAt(0) || ''); }
     truncate(text: string) { return text && text.length > 30 ? text.substring(0, 30) + '...' : text; }
 
-    // ✅ CORRECTION : Utilisation de statut
     getStatusClass(statut: string) {
         if (!statut) return '';
         if (statut === 'EN_ATTENTE_ADMIN') return 'pending';
@@ -411,7 +409,6 @@ export class AdminReinscriptionsComponent implements OnInit {
     showDetails(insc: any) { this.selectedInscription.set(insc); }
     closeDetails() { this.selectedInscription.set(null); }
 
-    // ✅ CORRECTION : Utilisation de statut
     getWorkflowStep(insc: any): number {
         if (!insc || !insc.statut) return 1;
         if (insc.statut === 'EN_ATTENTE_ADMIN') return 2;
@@ -427,12 +424,28 @@ export class AdminReinscriptionsComponent implements OnInit {
         return '';
     }
 
+    // ✅ MODIFICATION ICI : Incrémentation Année Doctorant
     valider(insc: any) {
-        if(confirm('Valider cette réinscription ?')) {
-            this.inscriptionService.validerParAdmin(insc.id, 'OK').subscribe(() => {
-                this.showToast('Réinscription validée', 'success');
-                this.loadData();
-                this.closeDetails();
+        if(confirm('Valider cette réinscription ? Le doctorant passera à l\'année supérieure.')) {
+
+            // 1. Validation de la réinscription (Backend Service Inscription)
+            this.inscriptionService.validerParAdmin(insc.id, 'OK').subscribe({
+                next: () => {
+                    this.showToast('Réinscription validée', 'success');
+
+                    // 2. Mise à jour de l'année du doctorant (Backend Service User)
+                    if (insc.doctorant && insc.doctorant.id) {
+                        const newYear = (insc.doctorant.anneeThese || 1) + 1;
+                        this.userService.updateUser(insc.doctorant.id, { anneeThese: newYear }).subscribe({
+                            next: () => console.log('✅ Année doctorant mise à jour : ' + newYear),
+                            error: (e) => console.error('❌ Erreur update année user', e)
+                        });
+                    }
+
+                    this.loadData();
+                    this.closeDetails();
+                },
+                error: (err) => this.showToast('Erreur lors de la validation', 'error')
             });
         }
     }

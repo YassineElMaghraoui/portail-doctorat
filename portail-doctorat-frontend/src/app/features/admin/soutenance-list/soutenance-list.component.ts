@@ -13,8 +13,10 @@ import { UserService } from '@core/services/user.service';
     <app-main-layout>
       <div class="page-container">
 
-        <!-- Hero Header -->
-        <div class="hero-section">
+        <!-- ======================================================= -->
+        <!-- 1. HERO HEADER                                          -->
+        <!-- ======================================================= -->
+        <div class="hero-header">
           <div class="hero-content">
             <div class="hero-icon"><i class="bi bi-mortarboard-fill"></i></div>
             <div>
@@ -23,51 +25,26 @@ import { UserService } from '@core/services/user.service';
             </div>
           </div>
           <button class="btn-refresh" (click)="loadData()" [disabled]="isLoading()">
-            @if (isLoading()) { <span class="spinner"></span> } @else { <i class="bi bi-arrow-clockwise"></i> }
+            @if (isLoading()) { <span class="spinner-btn"></span> } @else { <i class="bi bi-arrow-clockwise"></i> }
             Actualiser
           </button>
         </div>
 
-        <!-- Stats Grid (Tous les statuts) -->
+        <!-- ======================================================= -->
+        <!-- 2. STATISTIQUES                                         -->
+        <!-- ======================================================= -->
         <div class="stats-grid">
-          <!-- 1. Soumis (Chez Directeur) -->
-          <div class="stat-card blue-soft">
-            <div class="stat-icon"><i class="bi bi-person-workspace"></i></div>
-            <div class="stat-info"><span class="stat-value">{{ getCount('SOUMIS') }}</span><span class="stat-label">En examen (Dir.)</span></div>
-          </div>
-
-          <!-- 2. Prérequis Validés (Action Admin: Autoriser) -->
-          <div class="stat-card orange">
-            <div class="stat-icon"><i class="bi bi-shield-check"></i></div>
-            <div class="stat-info"><span class="stat-value">{{ getCount('PREREQUIS_VALIDES') }}</span><span class="stat-label">À Autoriser</span></div>
-          </div>
-
-          <!-- 3. Autorisée (Chez Directeur pour Jury) -->
-          <div class="stat-card purple-soft">
-            <div class="stat-icon"><i class="bi bi-people"></i></div>
-            <div class="stat-info"><span class="stat-value">{{ getCount('AUTORISEE') }}</span><span class="stat-label">Attente Jury</span></div>
-          </div>
-
-          <!-- 4. Jury Proposé (Action Admin: Planifier) -->
-          <div class="stat-card purple">
-            <div class="stat-icon"><i class="bi bi-calendar-plus"></i></div>
-            <div class="stat-info"><span class="stat-value">{{ getCount('JURY_PROPOSE') }}</span><span class="stat-label">À Planifier</span></div>
-          </div>
-
-          <!-- 5. Planifiée (En attente de soutenance) -->
-          <div class="stat-card blue">
-            <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
-            <div class="stat-info"><span class="stat-value">{{ getCount('PLANIFIEE') }}</span><span class="stat-label">Planifiées</span></div>
-          </div>
-
-          <!-- 6. Terminée & Rejetée -->
-          <div class="stat-card green">
-            <div class="stat-icon"><i class="bi bi-trophy-fill"></i></div>
-            <div class="stat-info"><span class="stat-value">{{ getCount('TERMINEE') }}</span><span class="stat-label">Terminées</span></div>
-          </div>
+          <div class="stat-card blue-soft"><div class="stat-icon-wrap"><i class="bi bi-person-workspace"></i></div><div class="stat-info"><span class="stat-value">{{ getCount('SOUMIS') }}</span><span class="stat-label">En examen (Dir.)</span></div></div>
+          <div class="stat-card orange"><div class="stat-icon-wrap"><i class="bi bi-shield-check"></i></div><div class="stat-info"><span class="stat-value">{{ getCount('PREREQUIS_VALIDES') }}</span><span class="stat-label">À Autoriser</span></div></div>
+          <div class="stat-card purple-soft"><div class="stat-icon-wrap"><i class="bi bi-people"></i></div><div class="stat-info"><span class="stat-value">{{ getCount('AUTORISEE') }}</span><span class="stat-label">Attente Jury</span></div></div>
+          <div class="stat-card purple"><div class="stat-icon-wrap"><i class="bi bi-calendar-plus"></i></div><div class="stat-info"><span class="stat-value">{{ getCount('JURY_PROPOSE') }}</span><span class="stat-label">À Planifier</span></div></div>
+          <div class="stat-card blue"><div class="stat-icon-wrap"><i class="bi bi-calendar-event"></i></div><div class="stat-info"><span class="stat-value">{{ getCount('PLANIFIEE') }}</span><span class="stat-label">Planifiées</span></div></div>
+          <div class="stat-card green"><div class="stat-icon-wrap"><i class="bi bi-trophy-fill"></i></div><div class="stat-info"><span class="stat-value">{{ getCount('TERMINEE') }}</span><span class="stat-label">Terminées</span></div></div>
         </div>
 
-        <!-- Tabs -->
+        <!-- ======================================================= -->
+        <!-- 3. ONGLETS                                              -->
+        <!-- ======================================================= -->
         <div class="tabs-container">
           <div class="tabs">
             <button class="tab-btn" [class.active]="activeTab === 'A_TRAITER'" (click)="setTab('A_TRAITER')">
@@ -78,195 +55,171 @@ import { UserService } from '@core/services/user.service';
               <i class="bi bi-person-badge"></i> En cours (Directeur)
               @if (getDirectorPendingCount() > 0) { <span class="tab-badge info">{{ getDirectorPendingCount() }}</span> }
             </button>
-            <button class="tab-btn" [class.active]="activeTab === 'PLANIFIEES'" (click)="setTab('PLANIFIEES')">
-              <i class="bi bi-calendar-check"></i> Planifiées
-            </button>
-            <button class="tab-btn" [class.active]="activeTab === 'HISTORIQUE'" (click)="setTab('HISTORIQUE')">
-              <i class="bi bi-clock-history"></i> Historique
-            </button>
+            <button class="tab-btn" [class.active]="activeTab === 'PLANIFIEES'" (click)="setTab('PLANIFIEES')"><i class="bi bi-calendar-check"></i> Planifiées</button>
+            <button class="tab-btn" [class.active]="activeTab === 'HISTORIQUE'" (click)="setTab('HISTORIQUE')"><i class="bi bi-clock-history"></i> Historique</button>
           </div>
         </div>
 
-        <!-- Loading -->
-        @if (isLoading()) { <div class="loading-state"><div class="loading-spinner"></div><span>Chargement...</span></div> }
+        <!-- ======================================================= -->
+        <!-- 4. TABLEAU (LISTE)                                      -->
+        <!-- ======================================================= -->
+        <div class="section-card">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+              <tr>
+                <th style="width: 30%;">Doctorant</th>
+                <th>Directeur</th>
+                <th>Sujet</th>
+                <th>Date Dépôt</th>
+                <th>Statut</th>
+                <th>Action</th>
+              </tr>
+              </thead>
+              <tbody>
+              <!-- CAS : Chargement -->
+                @if (isLoading()) {
+                  <tr><td colspan="6" class="loading-cell"><div class="spinner-sm"></div> Chargement...</td></tr>
+                }
 
-        <!-- Empty State -->
-        @if (!isLoading() && filteredSoutenances().length === 0) {
-          <div class="section-card"><div class="empty-state"><div class="empty-icon"><i class="bi bi-inbox"></i></div><h3>Aucun dossier</h3><p>Rien à afficher dans cette catégorie.</p></div></div>
-        }
 
-        <!-- TABLEAU -->
-        @if (!isLoading() && filteredSoutenances().length > 0) {
-          <div class="section-card">
-            <div class="table-container">
-              <table class="data-table">
-                <thead>
+              @else if (filteredSoutenances().length === 0) {
                 <tr>
-                  <th>Doctorant</th>
-                  <th>Directeur</th>
-                  <th>Sujet</th>
-                  <th>Date Demande</th>
-                  <th>Statut Actuel</th>
-                  <th>Action</th>
+                  <td colspan="6" class="empty-cell">
+                    <div class="empty-content">
+                      <i class="bi bi-inbox"></i>
+                      <p>Aucun dossier dans cette catégorie</p>
+                    </div>
+                  </td>
                 </tr>
-                </thead>
-                <tbody>
-                  @for (s of filteredSoutenances(); track s.id) {
-                    <tr class="clickable" (click)="openDetails(s)">
-                      <td>
-                        <div class="user-cell">
-                          <div class="user-avatar purple">{{ getInitials(s) }}</div>
-                          <div class="user-info">
-                            <span class="user-name">{{ getDoctorantName(s) }}</span>
-                            <span class="user-id">Mat: {{ s.doctorantInfo?.username }}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="fw-bold text-dark">{{ getDirecteurName(s) }}</td>
-                      <td><div class="motif-cell" [title]="s.titreThese">{{ truncate(s.titreThese) }}</div></td>
-                      <td><span class="date-badge">{{ s.createdAt | date:'dd/MM/yyyy' }}</span></td>
-                      <td>
-                                                <span class="status-badge" [ngClass]="getStatusClass(s.statut)">
-                                                    <i class="bi" [ngClass]="getStatusIcon(s.statut)"></i>
-                                                  {{ formatStatus(s.statut) }}
-                                                </span>
-                      </td>
-                      <td (click)="$event.stopPropagation()">
-                        @if (canAdminAct(s.statut)) {
-                          <button class="btn-action" (click)="openDetails(s)">
-                            <i class="bi bi-pencil-square"></i> Traiter
-                          </button>
-                        } @else {
-                          <span class="text-muted small"><i class="bi bi-eye"></i> Voir</span>
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        }
+              }
 
-        <!-- MODAL DÉTAILS & ACTIONS -->
+
+              @else {
+                @for (s of filteredSoutenances(); track s.id) {
+                  <tr class="clickable" (click)="openDetails(s)">
+                    <td>
+                      <div class="user-cell">
+                        <div class="avatar-circle purple">{{ getInitials(s) }}</div>
+                        <div class="user-info">
+                          <span class="name">{{ getDoctorantName(s) }}</span>
+                          <span class="id">Mat: {{ s.doctorantInfo?.username }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="fw-bold text-dark">{{ getDirecteurName(s) }}</td>
+                    <td><div class="motif-cell" [title]="s.titreThese">{{ truncate(s.titreThese) }}</div></td>
+                    <td><span class="date-badge">{{ s.createdAt | date:'dd/MM/yyyy' }}</span></td>
+                    <td>
+                        <span class="status-badge" [ngClass]="getStatusClass(s.statut)">
+                          <i class="bi" [ngClass]="getStatusIcon(s.statut)"></i>
+                          {{ formatStatus(s.statut) }}
+                        </span>
+                    </td>
+                    <td (click)="$event.stopPropagation()">
+                      @if (canAdminAct(s.statut)) {
+                        <button class="btn-action" (click)="openDetails(s)">
+                          <i class="bi bi-pencil-square"></i> Traiter
+                        </button>
+                      } @else {
+                        <span class="text-muted small"><i class="bi bi-eye"></i> Voir</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ======================================================= -->
+        <!-- 5. MODALE DE DÉTAILS                                    -->
+        <!-- ======================================================= -->
         @if (selectedSoutenance()) {
           <div class="modal-overlay" (click)="closeDetails()">
             <div class="modal-content" (click)="$event.stopPropagation()">
               <div class="modal-header">
-                <h3><i class="bi bi-folder2-open"></i> Dossier de Soutenance #{{ selectedSoutenance().id }}</h3>
+                <h3><i class="bi bi-folder2-open"></i> Dossier #{{ selectedSoutenance().id }}</h3>
                 <button class="btn-close" (click)="closeDetails()"><i class="bi bi-x-lg"></i></button>
               </div>
 
               <div class="modal-body">
 
-                <!-- WORKFLOW -->
+                <!-- A. STEPPER -->
                 <div class="workflow-container">
-                  <div class="step completed">
-                    <div class="step-circle"><i class="bi bi-file-earmark-plus"></i></div>
-                    <span class="step-label">Dépôt</span>
-                  </div>
+                  <div class="step completed"><div class="step-circle"><i class="bi bi-file-earmark-plus"></i></div><span class="step-label">Dépôt</span></div>
                   <div class="step-line" [class.active]="getStep(selectedSoutenance()) >= 2"></div>
-
-                  <div class="step" [ngClass]="getStepClass(selectedSoutenance(), 2)">
-                    <div class="step-circle"><i class="bi bi-person-check"></i></div>
-                    <span class="step-label">Directeur</span>
-                  </div>
+                  <div class="step" [ngClass]="getStepClass(selectedSoutenance(), 2)"><div class="step-circle"><i class="bi bi-person-check"></i></div><span class="step-label">Directeur</span></div>
                   <div class="step-line" [class.active]="getStep(selectedSoutenance()) >= 3"></div>
-
-                  <div class="step" [ngClass]="getStepClass(selectedSoutenance(), 3)">
-                    <div class="step-circle"><i class="bi bi-shield-check"></i></div>
-                    <span class="step-label">Autorisation</span>
-                  </div>
+                  <div class="step" [ngClass]="getStepClass(selectedSoutenance(), 3)"><div class="step-circle"><i class="bi bi-shield-check"></i></div><span class="step-label">Autorisation</span></div>
                   <div class="step-line" [class.active]="getStep(selectedSoutenance()) >= 4"></div>
-
-                  <div class="step" [ngClass]="getStepClass(selectedSoutenance(), 4)">
-                    <div class="step-circle"><i class="bi bi-people"></i></div>
-                    <span class="step-label">Jury</span>
-                  </div>
+                  <div class="step" [ngClass]="getStepClass(selectedSoutenance(), 4)"><div class="step-circle"><i class="bi bi-people"></i></div><span class="step-label">Jury</span></div>
                   <div class="step-line" [class.active]="getStep(selectedSoutenance()) >= 5"></div>
-
-                  <div class="step" [ngClass]="getStepClass(selectedSoutenance(), 5)">
-                    <div class="step-circle"><i class="bi bi-trophy"></i></div>
-                    <span class="step-label">Soutenance</span>
-                  </div>
+                  <div class="step" [ngClass]="getStepClass(selectedSoutenance(), 5)"><div class="step-circle"><i class="bi bi-trophy"></i></div><span class="step-label">Soutenance</span></div>
                 </div>
 
-                <!-- INFO GRID -->
                 <div class="detail-grid">
-                  <div class="detail-item">
-                    <label>Doctorant</label>
-                    <span class="value">{{ getDoctorantName(selectedSoutenance()) }}</span>
+                  <div class="detail-item"><label>Doctorant</label><span class="value">{{ getDoctorantName(selectedSoutenance()) }}</span></div>
+                  <div class="detail-item"><label>Directeur</label><span class="value">{{ getDirecteurName(selectedSoutenance()) }}</span></div>
+                  <div class="detail-item full-width"><label>Sujet de Thèse</label><div class="info-box">{{ selectedSoutenance().titreThese }}</div></div>
+                </div>
+
+                <!-- B. PRÉREQUIS (Lecture Seule) -->
+                <div class="detail-box mb-3">
+                  <h6><i class="bi bi-award"></i> État des Prérequis</h6>
+                  <div class="info-item-row">
+                    <span class="lbl">Publications</span>
+                    <span class="val" [class.ok]="getPublications(selectedSoutenance()) >= 2">{{ getPublications(selectedSoutenance()) }}/2</span>
                   </div>
-                  <div class="detail-item">
-                    <label>Directeur</label>
-                    <span class="value">{{ getDirecteurName(selectedSoutenance()) }}</span>
+                  <div class="info-item-row">
+                    <span class="lbl">Conférences</span>
+                    <span class="val" [class.ok]="getConferences(selectedSoutenance()) >= 2">{{ getConferences(selectedSoutenance()) }}/2</span>
                   </div>
-                  <div class="detail-item full-width">
-                    <label>Sujet de Thèse</label>
-                    <div class="info-box">{{ selectedSoutenance().titreThese }}</div>
+                  <div class="info-item-row">
+                    <span class="lbl">Formation</span>
+                    <span class="val" [class.ok]="getHeuresFormation(selectedSoutenance()) >= 200">{{ getHeuresFormation(selectedSoutenance()) }}/200h</span>
                   </div>
                 </div>
 
-                <!-- ACTIONS SPECIFIQUES SELON STATUT -->
                 <div class="action-section">
-
-                  <!-- CAS 1: Prérequis Validés -> ADMIN DOIT AUTORISER -->
+                  <!-- ACTION 1 : AUTORISATION -->
                   @if (selectedSoutenance().statut === 'PREREQUIS_VALIDES') {
                     <div class="admin-action-box">
                       <h5><i class="bi bi-shield-check"></i> Autorisation de Soutenance</h5>
-                      <p>Le directeur a validé les prérequis académiques. Confirmez-vous l'autorisation administrative ?</p>
+                      <p>Prérequis validés par le directeur. Confirmer l'autorisation ?</p>
                       <div class="action-buttons">
                         <button class="btn-refuse" (click)="rejeter(selectedSoutenance().id)">Refuser</button>
-                        <button class="btn-validate" (click)="autoriser(selectedSoutenance().id)">Autoriser la soutenance</button>
+                        <button class="btn-validate" (click)="autoriser(selectedSoutenance().id)">Autoriser</button>
                       </div>
                     </div>
                   }
 
-                  <!-- CAS 2: Jury Proposé -> ADMIN DOIT VALIDER ET PLANIFIER -->
+                  <!-- ACTION 2 : PLANIFICATION -->
                   @if (selectedSoutenance().statut === 'JURY_PROPOSE') {
                     <div class="admin-action-box">
-                      <h5><i class="bi bi-calendar-plus"></i> Validation du Jury & Planification</h5>
-                      <p class="mb-3">Vérifiez la composition du jury ci-dessous et fixez la date.</p>
-
-                      <!-- Affichage du jury -->
+                      <h5><i class="bi bi-calendar-plus"></i> Validation Jury & Planification</h5>
                       <div class="jury-list mb-3">
-                        <h6>Membres proposés :</h6>
                         @for (m of selectedSoutenance().membresJury; track m.id) {
-                          <div class="jury-member">
-                            <span class="role">{{ m.role }}</span>
-                            <span class="name">{{ m.prenom }} {{ m.nom }}</span>
-                            <span class="ets text-muted">({{ m.etablissement }})</span>
-                          </div>
+                          <div class="jury-member"><span class="role">{{ m.role }}</span><span class="name">{{ m.prenom }} {{ m.nom }}</span></div>
                         }
                       </div>
-
                       <div class="planning-form">
-                        <div class="form-group">
-                          <label>Date</label>
-                          <input type="date" [(ngModel)]="planning.date">
-                        </div>
-                        <div class="form-group">
-                          <label>Heure</label>
-                          <input type="time" [(ngModel)]="planning.heure">
-                        </div>
-                        <div class="form-group full">
-                          <label>Lieu / Salle</label>
-                          <input type="text" [(ngModel)]="planning.lieu" placeholder="Ex: Salle de conférences B">
-                        </div>
+                        <div class="form-group"><label>Date</label><input type="date" [(ngModel)]="planning.date"></div>
+                        <div class="form-group"><label>Heure</label><input type="time" [(ngModel)]="planning.heure"></div>
+                        <div class="form-group full"><label>Lieu</label><input type="text" [(ngModel)]="planning.lieu" placeholder="Salle"></div>
                       </div>
                       <div class="action-buttons mt-3">
-                        <button class="btn-refuse" (click)="rejeter(selectedSoutenance().id)">Refuser le Jury</button>
-                        <button class="btn-validate" [disabled]="!isPlanningValid()" (click)="planifier(selectedSoutenance().id)">Valider et Planifier</button>
+                        <button class="btn-refuse" (click)="rejeter(selectedSoutenance().id)">Refuser Jury</button>
+                        <button class="btn-validate" [disabled]="!isPlanningValid()" (click)="planifier(selectedSoutenance().id)">Valider & Planifier</button>
                       </div>
                     </div>
                   }
 
-                  <!-- CAS 3: Planifiée -> ADMIN DOIT CLÔTURER (RÉSULTAT) -->
+                  <!-- ACTION 3 : CLÔTURE -->
                   @if (selectedSoutenance().statut === 'PLANIFIEE') {
                     <div class="admin-action-box final">
-                      <h5><i class="bi bi-trophy"></i> Clôture de la Soutenance</h5>
-                      <p>La soutenance a eu lieu le <strong>{{ selectedSoutenance().dateSoutenance | date:'dd/MM/yyyy' }}</strong>.</p>
-
+                      <h5><i class="bi bi-trophy"></i> Clôture</h5>
                       <div class="planning-form">
                         <div class="form-group full">
                           <label>Mention obtenue</label>
@@ -274,75 +227,60 @@ import { UserService } from '@core/services/user.service';
                             <option value="">-- Sélectionner --</option>
                             <option value="Honorable">Honorable</option>
                             <option value="Tres Honorable">Très Honorable</option>
-                            <option value="Tres Honorable avec felicitations">Très Honorable avec félicitations</option>
+                            <option value="Tres Honorable avec felicitations">Avec félicitations</option>
                           </select>
                         </div>
                       </div>
-
                       <div class="action-buttons mt-3">
-                        <button class="btn-validate w-100" [disabled]="!resultat.mention" (click)="cloturer(selectedSoutenance().id)">Enregistrer le résultat</button>
+                        <button class="btn-validate w-100" [disabled]="!resultat.mention" (click)="cloturer(selectedSoutenance().id)">Enregistrer Résultat</button>
                       </div>
                     </div>
                   }
-
-                  <!-- CAS 4: Terminée (Info) -->
-                  @if (selectedSoutenance().statut === 'TERMINEE') {
-                    <div class="info-box success">
-                      <i class="bi bi-check-circle-fill"></i>
-                      <div>
-                        <strong>Soutenance validée</strong>
-                        <p>Mention : {{ selectedSoutenance().mention }}</p>
-                      </div>
-                    </div>
-                  }
-
                 </div>
               </div>
             </div>
           </div>
         }
 
-        <!-- Toast -->
+        <!-- TOAST -->
         @if (toast().show) {
-          <div class="toast" [class.success]="toast().type === 'success'" [class.error]="toast().type === 'error'">
-            <i class="bi" [class.bi-check-circle-fill]="toast().type === 'success'" [class.bi-x-circle-fill]="toast().type === 'error'"></i>
-            {{ toast().message }}
-          </div>
+          <div class="toast" [ngClass]="toast().type === 'success' ? 'success' : 'error'">{{ toast().message }}</div>
         }
-
       </div>
     </app-main-layout>
   `,
   styles: [`
+    /* STYLE UNIFIÉ (Même que directeur) */
     .page-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
-    .hero-section { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; color: white; }
-    .hero-content { display: flex; align-items: center; gap: 1.25rem; }
-    .hero-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; }
-    .hero-title { margin: 0; font-size: 1.6rem; font-weight: 800; }
+    .hero-header { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; color: white; }
+    .hero-content { display: flex; gap: 1.25rem; align-items: center; }
+    .hero-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 1.75rem; }
+    .hero-title { font-size: 1.5rem; font-weight: 800; margin: 0; }
     .hero-subtitle { margin: 0.25rem 0 0; opacity: 0.9; }
-    .btn-refresh { padding: 0.75rem 1.25rem; background: white; color: #6d28d9; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
-    .btn-refresh:hover { transform: translateY(-2px); }
-    .spinner { width: 16px; height: 16px; border: 2px solid #e9d5ff; border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .btn-refresh { padding: 0.75rem 1.25rem; background: white; color: #6d28d9; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
 
+    /* STATS */
     .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-    .stat-card { background: white; border-radius: 16px; padding: 1rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; }
-    .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 0.25rem; }
-    .stat-card.blue-soft .stat-icon { background: #dbeafe; color: #2563eb; }
-    .stat-card.orange .stat-icon { background: #fff7ed; color: #ea580c; }
-    .stat-card.purple-soft .stat-icon { background: #f3e8ff; color: #9333ea; }
-    .stat-card.purple .stat-icon { background: #7c3aed; color: white; }
-    .stat-card.blue .stat-icon { background: #1d4ed8; color: white; }
-    .stat-card.green .stat-icon { background: #dcfce7; color: #16a34a; }
+    .stat-card { background: white; border-radius: 14px; padding: 1rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem; border: 1px solid #e2e8f0; }
+    .stat-icon-wrap { width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 1.1rem; }
+    .stat-card.blue-soft .stat-icon-wrap { background: #dbeafe; color: #2563eb; }
+    .stat-card.orange .stat-icon-wrap { background: #fef3c7; color: #d97706; }
+    .stat-card.purple-soft .stat-icon-wrap { background: #f3e8ff; color: #7c3aed; }
+    .stat-card.purple .stat-icon-wrap { background: #7c3aed; color: white; }
+    .stat-card.blue .stat-icon-wrap { background: #1d4ed8; color: white; }
+    .stat-card.green .stat-icon-wrap { background: #dcfce7; color: #16a34a; }
     .stat-value { font-size: 1.4rem; font-weight: 800; color: #1e293b; display: block; line-height: 1; }
     .stat-label { font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
 
+    /* TABS */
     .tabs-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
     .tabs { background: #f1f5f9; padding: 5px; border-radius: 50px; display: inline-flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
-    .tab-btn { border: none; background: transparent; padding: 0.75rem 1.25rem; border-radius: 40px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn { border: none; background: transparent; padding: 0.75rem 1.25rem; border-radius: 40px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: 0.2s; white-space: nowrap; }
     .tab-btn.active { background: white; color: #7c3aed; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .tab-badge { background: #ef4444; color: white; padding: 0.15rem 0.5rem; border-radius: 50px; font-size: 0.7rem; }
     .tab-badge.info { background: #3b82f6; }
 
+    /* TABLE */
     .section-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; }
     .table-container { overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; }
@@ -350,34 +288,38 @@ import { UserService } from '@core/services/user.service';
     .data-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
     .data-table tbody tr { transition: background 0.2s; cursor: pointer; }
     .data-table tbody tr:hover { background: #f0f9ff; }
+    .empty-cell { padding: 3rem; text-align: center; }
+    .empty-content { color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .empty-content i { font-size: 2rem; }
+    .loading-cell { text-align: center; padding: 2rem; color: #64748b; }
 
     .user-cell { display: flex; align-items: center; gap: 0.75rem; }
-    .user-avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: white; }
-    .user-avatar.purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .avatar-circle { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; display: flex; justify-content: center; align-items: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
     .user-info { display: flex; flex-direction: column; }
-    .user-name { font-weight: 600; color: #1e293b; }
-    .user-id { font-size: 0.8rem; color: #64748b; }
+    .user-info .name { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
+    .user-info .id { font-size: 0.75rem; color: #64748b; }
+    .date-badge { background: #f1f5f9; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color: #475569; font-weight: 500; }
+    .motif-cell { max-width: 200px; font-size: 0.9rem; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+    .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
     .status-badge.pending { background: #fef3c7; color: #b45309; }
     .status-badge.action { background: #fef2f2; color: #dc2626; animation: pulse-red 2s infinite; }
     .status-badge.waiting { background: #e0e7ff; color: #4338ca; }
+    .status-badge.scheduled { background: #f3e8ff; color: #7c3aed; }
     .status-badge.success { background: #dcfce7; color: #15803d; }
     .status-badge.danger { background: #fee2e2; color: #991b1b; }
-
     .btn-action { padding: 0.4rem 0.8rem; background: #7c3aed; color: white; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; }
-    .btn-action:hover { background: #6d28d9; }
 
-    /* Modal */
+    /* MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
     .modal-content { background: white; border-radius: 20px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.25); animation: slideUp 0.3s; }
     .modal-header { padding: 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fcfcfc; }
     .modal-header h3 { margin: 0; font-size: 1.2rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; }
     .btn-close { border: none; background: transparent; font-size: 1.25rem; color: #64748b; cursor: pointer; }
-
     .modal-body { padding: 2rem; }
 
-    .workflow-container { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; overflow-x: auto; }
+    /* STEPPER */
+    .workflow-container { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; overflow-x: auto; }
     .step { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; min-width: 80px; text-align: center; }
     .step-circle { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 1rem; margin-bottom: 0.5rem; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .step-label { font-size: 0.65rem; font-weight: 600; color: #64748b; }
@@ -386,6 +328,7 @@ import { UserService } from '@core/services/user.service';
     .step-line { flex: 1; height: 3px; background: #e2e8f0; margin-top: -20px; position: relative; z-index: 1; min-width: 30px; }
     .step-line.active { background: #22c55e; }
 
+    /* DETAILS */
     .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .detail-item { display: flex; flex-direction: column; gap: 0.4rem; }
     .detail-item.full-width { grid-column: 1 / -1; }
@@ -393,7 +336,13 @@ import { UserService } from '@core/services/user.service';
     .detail-item .value { font-size: 1rem; color: #1e293b; font-weight: 500; }
     .info-box { background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; color: #334155; }
 
-    /* Action Section */
+    .detail-box { background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0; }
+    .detail-box h6 { font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .info-item-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; color: #64748b; }
+    .info-item-row .val { font-weight: 600; color: #1e293b; }
+    .info-item-row .val.ok { color: #166534; }
+
+    /* ACTIONS & FORMS */
     .action-section { border-top: 1px solid #e2e8f0; padding-top: 1.5rem; }
     .admin-action-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 1.5rem; }
     .admin-action-box.final { background: #eff6ff; border-color: #bfdbfe; }
@@ -416,17 +365,15 @@ import { UserService } from '@core/services/user.service';
     .form-group label { font-size: 0.8rem; font-weight: 600; color: #475569; }
     .form-group input, .form-group select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; }
 
-    .loading-state, .empty-state { padding: 4rem; text-align: center; color: #64748b; }
-    .empty-icon { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 1rem; }
-
-    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 2000; }
-    .toast.success { background: #22c55e; color: white; }
-    .toast.error { background: #ef4444; color: white; }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-btn { width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+    .spinner-sm { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); } }
+
+    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 10px; color: white; font-weight: 600; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .toast.success { background: #22c55e; } .toast.error { background: #ef4444; }
 
     @media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .detail-grid { grid-template-columns: 1fr; } .planning-form { grid-template-columns: 1fr; } }
@@ -438,8 +385,6 @@ export class AdminSoutenanceComponent implements OnInit {
   activeTab = 'A_TRAITER';
   selectedSoutenance = signal<any>(null);
   toast = signal<{show: boolean, message: string, type: 'success' | 'error'}>({show: false, message: '', type: 'success'});
-
-  // Form data
   planning = { date: '', heure: '', lieu: '' };
   resultat = { mention: '' };
 
@@ -459,15 +404,15 @@ export class AdminSoutenanceComponent implements OnInit {
     });
   }
 
+  // --- ENRICHISSEMENT ---
   enrichData(data: any[]) {
     if(data.length === 0) { this.soutenances.set([]); this.isLoading.set(false); return; }
+
     let loaded = 0;
     data.forEach(s => {
-      // Enrichir avec Doctorant
       this.userService.getUserById(s.doctorantId).subscribe({
         next: (doc) => {
           s.doctorantInfo = doc;
-          // Enrichir avec Directeur
           if(doc.directeurId) {
             this.userService.getUserById(doc.directeurId).subscribe(dir => {
               s.directeurInfo = dir;
@@ -482,6 +427,7 @@ export class AdminSoutenanceComponent implements OnInit {
     });
   }
 
+  // --- FILTRES ---
   setTab(tab: string) { this.activeTab = tab; }
 
   filteredSoutenances() {
@@ -491,7 +437,6 @@ export class AdminSoutenanceComponent implements OnInit {
       return all.filter(s => ['PREREQUIS_VALIDES', 'JURY_PROPOSE', 'PLANIFIEE'].includes(s.statut));
     }
     if (this.activeTab === 'CHEZ_DIRECTEUR') {
-      // SOUMIS (Valid prerequis), AUTORISEE (Proposer jury)
       return all.filter(s => ['SOUMIS', 'AUTORISEE'].includes(s.statut));
     }
     if (this.activeTab === 'PLANIFIEES') {
@@ -503,17 +448,22 @@ export class AdminSoutenanceComponent implements OnInit {
     return [];
   }
 
-  // Counts
+  // --- HELPERS ---
   getCount(statut: string) { return this.soutenances().filter(s => s.statut === statut).length; }
   getActionRequiredCount() { return this.soutenances().filter(s => ['PREREQUIS_VALIDES', 'JURY_PROPOSE', 'PLANIFIEE'].includes(s.statut)).length; }
   getDirectorPendingCount() { return this.soutenances().filter(s => ['SOUMIS', 'AUTORISEE'].includes(s.statut)).length; }
 
-  // Helpers
   getDoctorantName(s: any) { return s.doctorantInfo ? `${s.doctorantInfo.prenom} ${s.doctorantInfo.nom}` : `Doc #${s.doctorantId}`; }
   getDirecteurName(s: any) { return s.directeurInfo ? `${s.directeurInfo.prenom} ${s.directeurInfo.nom}` : 'Non assigné'; }
   getInitials(s: any) { return s.doctorantInfo ? (s.doctorantInfo.prenom[0] + s.doctorantInfo.nom[0]).toUpperCase() : '?'; }
   truncate(t: string) { return t?.length > 40 ? t.substr(0, 40) + '...' : t; }
 
+  // PREREQUIS HELPERS (Admin View)
+  getPublications(s: any): number { return s.doctorantInfo?.nbPublications || 0; }
+  getConferences(s: any): number { return s.doctorantInfo?.nbConferences || 0; }
+  getHeuresFormation(s: any): number { return s.doctorantInfo?.heuresFormation || 0; }
+
+  // VISUALS
   getStatusClass(s: string) {
     if(['PREREQUIS_VALIDES', 'JURY_PROPOSE'].includes(s)) return 'action';
     if(['SOUMIS', 'AUTORISEE'].includes(s)) return 'waiting';
@@ -533,10 +483,9 @@ export class AdminSoutenanceComponent implements OnInit {
   }
   canAdminAct(s: string) { return ['PREREQUIS_VALIDES', 'JURY_PROPOSE', 'PLANIFIEE'].includes(s); }
 
-  // Details Modal
+  // --- ACTIONS ---
   openDetails(s: any) {
     this.selectedSoutenance.set(s);
-    // Reset forms
     this.planning = { date: '', heure: '', lieu: '' };
     this.resultat = { mention: '' };
   }
@@ -553,7 +502,6 @@ export class AdminSoutenanceComponent implements OnInit {
     return '';
   }
 
-  // Actions
   autoriser(id: number) {
     if(!confirm('Confirmer l\'autorisation de soutenance ?')) return;
     this.soutenanceService.autoriserSoutenanceAdmin(id).subscribe({
@@ -574,7 +522,7 @@ export class AdminSoutenanceComponent implements OnInit {
   cloturer(id: number) {
     if(!this.resultat.mention) return;
     this.soutenanceService.cloturerSoutenance(id, this.resultat.mention).subscribe({
-      next: () => { this.showToast('Soutenance terminée !', 'success'); this.loadData(); this.closeDetails(); },
+      next: () => { this.showToast('Terminée !', 'success'); this.loadData(); this.closeDetails(); },
       error: () => this.showToast('Erreur', 'error')
     });
   }
@@ -582,8 +530,7 @@ export class AdminSoutenanceComponent implements OnInit {
   rejeter(id: number) {
     const motif = prompt('Motif du rejet :');
     if(motif) {
-      // Implémenter le service de rejet si nécessaire
-      alert('Rejet non implémenté dans cet exemple');
+      alert('Non implémenté');
     }
   }
 
