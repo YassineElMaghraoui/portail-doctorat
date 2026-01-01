@@ -91,20 +91,21 @@ import { TypeDerogation } from '@core/models/derogation.model';
 
           <form [formGroup]="derogationForm" (ngSubmit)="onSubmit()" class="card-body">
 
-            <!-- Type de dérogation -->
+            <!-- Type de dérogation (Dynamique) -->
             <div class="form-group">
               <label class="form-label">
                 <i class="bi bi-tag"></i>
                 Type de dérogation <span class="required">*</span>
               </label>
+
               <select class="form-select" formControlName="typeDerogation">
                 <option value="">Sélectionnez le type</option>
-                <option value="PROLONGATION_4EME_ANNEE">Prolongation 4ème année</option>
-                <option value="PROLONGATION_5EME_ANNEE">Prolongation 5ème année</option>
-                <option value="PROLONGATION_6EME_ANNEE">Prolongation 6ème année (dernière)</option>
-                <option value="SUSPENSION_TEMPORAIRE">Suspension temporaire</option>
-                <option value="AUTRE">Autre motif</option>
+                <!-- ✅ Options dynamiques basées sur l'année -->
+                @for (type of availableTypes(); track type.value) {
+                  <option [value]="type.value">{{ type.label }}</option>
+                }
               </select>
+
               @if (derogationForm.get('typeDerogation')?.invalid && derogationForm.get('typeDerogation')?.touched) {
                 <span class="error-text"><i class="bi bi-exclamation-circle"></i>Sélectionnez un type</span>
               }
@@ -220,14 +221,6 @@ import { TypeDerogation } from '@core/models/derogation.model';
     .hint { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
     .error-text { display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; color: #ef4444; margin-top: 0.4rem; }
 
-    /* Directeur Info */
-    .directeur-info { display: flex; gap: 1rem; padding: 1rem; background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; margin-bottom: 1.5rem; }
-    .directeur-info i { font-size: 1.5rem; color: #22c55e; }
-    .directeur-info div { display: flex; flex-direction: column; }
-    .directeur-info strong { font-size: 0.8rem; color: #166534; margin-bottom: 0.15rem; }
-    .directeur-info span { font-size: 0.95rem; color: #15803d; font-weight: 600; }
-    .directeur-info small { font-size: 0.75rem; color: #22c55e; margin-top: 0.25rem; }
-
     .info-box { display: flex; gap: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 10px; margin-bottom: 1.5rem; }
     .info-box i { color: #f59e0b; font-size: 1.1rem; }
     .info-box strong { display: block; font-size: 0.85rem; color: #92400e; margin-bottom: 0.15rem; }
@@ -261,6 +254,9 @@ export class DerogationFormComponent implements OnInit {
   successMessage = signal('');
   currentYear = 1;
 
+  // ✅ Signal pour les options dynamiques
+  availableTypes = signal<{value: string, label: string}[]>([]);
+
   constructor(
       private fb: FormBuilder,
       private router: Router,
@@ -277,8 +273,34 @@ export class DerogationFormComponent implements OnInit {
     const user = this.authService.currentUser();
     this.currentYear = user?.anneeThese || 1;
 
-    // Le nom du directeur sera affiché si disponible dans le profil utilisateur
-    // Pour l'instant, on ne l'affiche pas si la propriété n'existe pas
+    // Initialiser les options basées sur l'année
+    this.setAvailableTypes();
+  }
+
+  // ✅ LOGIQUE DE FILTRAGE DES TYPES DE DEROGATION
+  setAvailableTypes() {
+    const options = [];
+
+    // Année 3 -> Prolongation vers 4
+    if (this.currentYear === 3) {
+      options.push({ value: 'PROLONGATION_4EME_ANNEE', label: 'Prolongation 4ème année' });
+    }
+    // Année 4 -> Prolongation vers 5
+    else if (this.currentYear === 4) {
+      options.push({ value: 'PROLONGATION_5EME_ANNEE', label: 'Prolongation 5ème année' });
+    }
+    // Année 5 -> Prolongation vers 6
+    else if (this.currentYear === 5) {
+      options.push({ value: 'PROLONGATION_6EME_ANNEE', label: 'Prolongation 6ème année (dernière)' });
+    }
+
+    // Options toujours disponibles
+    options.push(
+        { value: 'SUSPENSION_TEMPORAIRE', label: 'Suspension temporaire' },
+        { value: 'AUTRE', label: 'Autre motif' }
+    );
+
+    this.availableTypes.set(options);
   }
 
   getYearSuffix(): string {
@@ -297,7 +319,6 @@ export class DerogationFormComponent implements OnInit {
     const user = this.authService.currentUser();
     const request = {
       doctorantId: user?.id!,
-      // directeurId sera récupéré côté backend si non fourni
       typeDerogation: this.derogationForm.value.typeDerogation as TypeDerogation,
       motif: this.derogationForm.value.motif
     };
