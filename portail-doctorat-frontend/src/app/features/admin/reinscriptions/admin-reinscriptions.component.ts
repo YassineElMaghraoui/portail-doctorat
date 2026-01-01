@@ -4,18 +4,16 @@ import { FormsModule } from '@angular/forms';
 import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.component';
 import { InscriptionService } from '@core/services/inscription.service';
 import { UserService } from '@core/services/user.service';
-import { User } from '@core/models/user.model';
 
 @Component({
     selector: 'app-admin-reinscriptions',
     standalone: true,
     imports: [CommonModule, FormsModule, MainLayoutComponent],
     template: `
-        <!-- ... (Tout le template reste identique à votre code fourni) ... -->
-        <!-- Je ne le remets pas pour économiser de la place, il est parfait -->
         <app-main-layout>
             <div class="page-container">
 
+                <!-- HERO HEADER -->
                 <div class="hero-section">
                     <div class="hero-content">
                         <div class="hero-icon"><i class="bi bi-journal-check"></i></div>
@@ -25,30 +23,32 @@ import { User } from '@core/models/user.model';
                         </div>
                     </div>
                     <button class="btn-refresh" (click)="loadData()" [disabled]="isLoading()">
-                        @if (isLoading()) { <span class="spinner"></span> } @else { <i class="bi bi-arrow-clockwise"></i> }
+                        @if (isLoading()) { <span class="spinner-btn"></span> } @else { <i class="bi bi-arrow-clockwise"></i> }
                         Actualiser
                     </button>
                 </div>
 
+                <!-- STATS CARDS -->
                 <div class="stats-grid">
                     <div class="stat-card orange">
-                        <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                        <div class="stat-icon-wrap"><i class="bi bi-hourglass-split"></i></div>
                         <div class="stat-info"><span class="stat-value">{{ getCount('EN_ATTENTE_ADMIN') }}</span><span class="stat-label">À traiter (Admin)</span></div>
                     </div>
                     <div class="stat-card blue">
-                        <div class="stat-icon"><i class="bi bi-person-badge"></i></div>
+                        <div class="stat-icon-wrap"><i class="bi bi-person-badge"></i></div>
                         <div class="stat-info"><span class="stat-value">{{ getCount('EN_ATTENTE_DIRECTEUR') }}</span><span class="stat-label">Chez Directeur</span></div>
                     </div>
                     <div class="stat-card green">
-                        <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                        <div class="stat-icon-wrap"><i class="bi bi-check-circle"></i></div>
                         <div class="stat-info"><span class="stat-value">{{ getCount('ADMIS') }}</span><span class="stat-label">Validées</span></div>
                     </div>
                     <div class="stat-card red">
-                        <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+                        <div class="stat-icon-wrap"><i class="bi bi-x-circle"></i></div>
                         <div class="stat-info"><span class="stat-value">{{ getCount('REJETE') }}</span><span class="stat-label">Refusées</span></div>
                     </div>
                 </div>
 
+                <!-- TABS -->
                 <div class="tabs-container">
                     <div class="tabs">
                         <button class="tab-btn" [class.active]="activeTab === 'EN_ATTENTE_ADMIN'" (click)="setTab('EN_ATTENTE_ADMIN')">
@@ -65,23 +65,26 @@ import { User } from '@core/models/user.model';
                     </div>
                 </div>
 
-                @if (isLoading()) { <div class="loading-state"><div class="loading-spinner"></div><span>Chargement des dossiers...</span></div> }
+                <!-- LOADING & EMPTY -->
+                @if (isLoading()) { <div class="loading-state"><div class="spinner-large"></div><p>Chargement des dossiers...</p></div> }
                 @else if (filteredInscriptions().length === 0) {
                     <div class="section-card"><div class="empty-state"><div class="empty-icon"><i class="bi bi-inbox"></i></div><h3>Aucun dossier</h3><p>Rien à afficher ici pour le moment.</p></div></div>
                 }
 
+                <!-- TABLEAU LISTE -->
                 @if (!isLoading() && filteredInscriptions().length > 0) {
                     <div class="section-card">
                         <div class="table-container">
                             <table class="data-table">
                                 <thead>
                                 <tr>
-                                    <th>Doctorant</th>
+                                    <th style="width: 30%;">Doctorant</th>
                                     <th>Directeur</th>
                                     <th>Année</th>
                                     <th>Sujet</th>
                                     <th>Date soumission</th>
                                     <th>Statut</th>
+                                    <th>Action</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -89,18 +92,14 @@ import { User } from '@core/models/user.model';
                                         <tr class="clickable" (click)="showDetails(insc)">
                                             <td>
                                                 <div class="user-cell">
-                                                    <div class="user-avatar blue">{{ getInitials(insc) }}</div>
+                                                    <div class="avatar-circle blue">{{ getInitials(insc) }}</div>
                                                     <div class="user-info">
-                                                        <span class="user-name">{{ getDoctorantName(insc) }}</span>
-                                                        <span class="user-id">Mat: {{ insc.doctorant?.username || 'N/A' }}</span>
+                                                        <span class="name">{{ getDoctorantName(insc) }}</span>
+                                                        <span class="id">Mat: {{ insc.doctorant?.username || 'N/A' }}</span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div class="d-flex flex-column">
-                                                    <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ getDirecteurName(insc) }}</span>
-                                                </div>
-                                            </td>
+                                            <td class="fw-bold text-dark">{{ getDirecteurName(insc) }}</td>
                                             <td><span class="badge year">{{ insc.anneeInscription }}ème</span></td>
                                             <td><div class="motif-cell" [title]="insc.sujetThese">{{ truncate(insc.sujetThese) }}</div></td>
                                             <td><span class="date-badge">{{ insc.createdAt | date:'dd/MM/yyyy' }}</span></td>
@@ -110,6 +109,15 @@ import { User } from '@core/models/user.model';
                                                     {{ formatStatus(insc.statut) }}
                                                 </span>
                                             </td>
+                                            <td (click)="$event.stopPropagation()">
+                                                @if (activeTab === 'EN_ATTENTE_ADMIN') {
+                                                    <button class="btn-action" (click)="showDetails(insc)">
+                                                        <i class="bi bi-pencil-square"></i> Traiter
+                                                    </button>
+                                                } @else {
+                                                    <span class="text-muted small"><i class="bi bi-eye"></i> Voir</span>
+                                                }
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
@@ -118,6 +126,7 @@ import { User } from '@core/models/user.model';
                     </div>
                 }
 
+                <!-- MODAL DÉTAILS -->
                 @if (selectedInscription()) {
                     <div class="modal-overlay" (click)="closeDetails()">
                         <div class="modal-content" (click)="$event.stopPropagation()">
@@ -126,38 +135,37 @@ import { User } from '@core/models/user.model';
                                 <button class="btn-close" (click)="closeDetails()"><i class="bi bi-x-lg"></i></button>
                             </div>
                             <div class="modal-body">
-                                <div class="workflow-container">
 
-                                    <!-- Étape 1 : Soumission -->
+                                <!-- WORKFLOW VISUEL (STEPPER) -->
+                                <div class="workflow-container">
+                                    <!-- 1. Soumission -->
                                     <div class="step completed">
                                         <div class="step-circle"><i class="bi bi-check-lg"></i></div>
                                         <span class="step-label">Soumission</span>
                                     </div>
-
                                     <div class="step-line" [class.active]="getWorkflowStep(selectedInscription()) >= 2"></div>
 
-                                    <!-- Étape 2 : Directeur (EN PREMIER) -->
+                                    <!-- 2. Administration (Etape Actuelle si EN_ATTENTE_ADMIN) -->
                                     <div class="step" [ngClass]="getStepClass(selectedInscription(), 2)">
                                         <div class="step-circle">
                                             @if(getWorkflowStep(selectedInscription()) > 2) { <i class="bi bi-check-lg"></i> }
-                                            @else { <i class="bi bi-person-badge"></i> }
-                                        </div>
-                                        <span class="step-label">Directeur</span>
-                                    </div>
-
-                                    <div class="step-line" [class.active]="getWorkflowStep(selectedInscription()) >= 3"></div>
-
-                                    <!-- Étape 3 : Administration -->
-                                    <div class="step" [ngClass]="getStepClass(selectedInscription(), 3)">
-                                        <div class="step-circle">
-                                            @if(getWorkflowStep(selectedInscription()) > 3) { <i class="bi bi-check-lg"></i> }
+                                            @else if(getWorkflowStep(selectedInscription()) === 2) { <i class="bi bi-building"></i> }
                                             @else { <i class="bi bi-building"></i> }
                                         </div>
                                         <span class="step-label">Administration</span>
                                     </div>
+                                    <div class="step-line" [class.active]="getWorkflowStep(selectedInscription()) >= 3"></div>
 
+                                    <!-- 3. Directeur -->
+                                    <div class="step" [ngClass]="getStepClass(selectedInscription(), 3)">
+                                        <div class="step-circle">
+                                            @if(getWorkflowStep(selectedInscription()) > 3) { <i class="bi bi-check-lg"></i> }
+                                            @else if(getWorkflowStep(selectedInscription()) === 3) { <i class="bi bi-person-badge"></i> }
+                                            @else { <i class="bi bi-person-badge"></i> }
+                                        </div>
+                                        <span class="step-label">Directeur</span>
+                                    </div>
                                 </div>
-
 
                                 <div class="detail-grid">
                                     <div class="detail-item">
@@ -177,18 +185,41 @@ import { User } from '@core/models/user.model';
                                         <span class="value fw-bold text-primary">{{ getDirecteurName(selectedInscription()) }}</span>
                                     </div>
                                 </div>
-                            </div>
 
-                            @if (selectedInscription().statut === 'EN_ATTENTE_ADMIN') {
-                                <div class="modal-footer">
-                                    <button class="btn-refuse" (click)="rejeter(selectedInscription())">Rejeter</button>
-                                    <button class="btn-accept" (click)="valider(selectedInscription())">Valider (Envoyer au Directeur)</button>
-                                </div>
-                            }
+                                <!-- ACTIONS D'ADMINISTRATION -->
+                                @if (selectedInscription().statut === 'EN_ATTENTE_ADMIN') {
+                                    <div class="action-section mt-4">
+                                        <div class="admin-action-box">
+                                            <h5><i class="bi bi-shield-check"></i> Validation Administrative</h5>
+
+                                            <!-- Affichage Boutons ou Formulaire -->
+                                            @if (!isRejecting()) {
+                                                <p>Confirmez-vous la conformité administrative de ce dossier ? Il sera ensuite transmis au directeur.</p>
+                                                <div class="action-buttons">
+                                                    <button class="btn-refuse" (click)="initiateRejection()">Refuser</button>
+                                                    <button class="btn-validate" (click)="valider(selectedInscription())">Valider et Transmettre</button>
+                                                </div>
+                                            } @else {
+                                                <div class="decision-form">
+                                                    <p class="mb-2 fw-bold text-danger">Motif du refus :</p>
+                                                    <textarea [(ngModel)]="refusalReason" class="form-control mb-3" rows="3" placeholder="Indiquez la raison du refus..."></textarea>
+                                                    <div class="d-flex gap-2 justify-content-end">
+                                                        <button class="btn-cancel" (click)="cancelRejection()">Annuler</button>
+                                                        <button class="btn-confirm-refuse" [disabled]="!refusalReason.trim()" (click)="confirmRejection(selectedInscription())">
+                                                            Confirmer le refus
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
                         </div>
                     </div>
                 }
 
+                <!-- Toast -->
                 @if (toast().show) {
                     <div class="toast" [class.success]="toast().type === 'success'" [class.error]="toast().type === 'error'">
                         <i class="bi" [class.bi-check-circle-fill]="toast().type === 'success'" [class.bi-x-circle-fill]="toast().type === 'error'"></i>
@@ -200,67 +231,66 @@ import { User } from '@core/models/user.model';
         </app-main-layout>
     `,
     styles: [`
-      /* ... (Styles inchangés car ils étaient bons) ... */
+      /* STYLES UNIFIÉS (Identiques aux autres pages) */
       .page-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
-      .hero-section { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; color: white; }
+      .hero-section { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; color: white; }
       .hero-content { display: flex; align-items: center; gap: 1.25rem; }
       .hero-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; }
       .hero-title { margin: 0; font-size: 1.6rem; font-weight: 800; }
       .hero-subtitle { margin: 0.25rem 0 0; opacity: 0.9; }
-      .btn-refresh { padding: 0.75rem 1.25rem; background: white; color: #1d4ed8; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
+      .btn-refresh { padding: 0.75rem 1.25rem; background: white; color: #1d4ed8; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
       .btn-refresh:hover { transform: translateY(-2px); }
-      .spinner { width: 16px; height: 16px; border: 2px solid #dbeafe; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
+      /* STATS */
       .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-      .stat-card { background: white; border-radius: 16px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; }
-      .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
-      .stat-card.orange .stat-icon { background: #fff7ed; color: #ea580c; }
-      .stat-card.blue .stat-icon { background: #eff6ff; color: #3b82f6; }
-      .stat-card.green .stat-icon { background: #ecfdf5; color: #16a34a; }
-      .stat-card.red .stat-icon { background: #fef2f2; color: #dc2626; }
+      .stat-card { background: white; border-radius: 14px; padding: 1rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem; border: 1px solid #e2e8f0; }
+      .stat-icon-wrap { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+      .stat-card.orange .stat-icon-wrap { background: #fff7ed; color: #ea580c; }
+      .stat-card.blue .stat-icon-wrap { background: #eff6ff; color: #3b82f6; }
+      .stat-card.green .stat-icon-wrap { background: #dcfce7; color: #16a34a; }
+      .stat-card.red .stat-icon-wrap { background: #fef2f2; color: #dc2626; }
       .stat-value { font-size: 1.5rem; font-weight: 700; color: #1e293b; display: block; }
-      .stat-label { font-size: 0.8rem; color: #64748b; }
+      .stat-label { font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
 
+      /* TABS */
       .tabs-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
       .tabs { background: #f1f5f9; padding: 5px; border-radius: 50px; display: inline-flex; gap: 5px; }
-      .tab-btn { border: none; background: transparent; padding: 0.75rem 1.5rem; border-radius: 40px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; }
+      .tab-btn { border: none; background: transparent; padding: 0.75rem 1.25rem; border-radius: 40px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; }
       .tab-btn.active { background: white; color: #1d4ed8; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-      .tab-badge { background: #ef4444; color: white; padding: 0.15rem 0.5rem; border-radius: 50px; font-size: 0.75rem; }
+      .tab-badge { background: #ef4444; color: white; padding: 0.15rem 0.5rem; border-radius: 50px; font-size: 0.7rem; }
       .tab-badge.info { background: #3b82f6; }
 
-      .section-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 1.5rem; }
+      /* TABLE */
+      .section-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; }
       .table-container { overflow-x: auto; }
       .data-table { width: 100%; border-collapse: collapse; }
       .data-table th { padding: 1rem 1.25rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
       .data-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-      .data-table tbody tr { transition: background 0.2s; cursor: pointer; }
-      .data-table tbody tr:hover { background: #f0f9ff; }
+      .data-table tbody tr { transition: background 0.2s; }
+      .data-table tbody tr.clickable:hover { background: #f0f9ff; cursor: pointer; }
 
       .user-cell { display: flex; align-items: center; gap: 0.75rem; }
-      .user-avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: white; }
-      .user-avatar.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+      .avatar-circle { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; display: flex; justify-content: center; align-items: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
       .user-info { display: flex; flex-direction: column; }
-      .user-name { font-weight: 600; color: #1e293b; }
-      .user-id { font-size: 0.8rem; color: #64748b; }
+      .user-info .name { font-weight: 600; color: #1e293b; font-size: 0.95rem; }
+      .user-info .id { font-size: 0.75rem; color: #64748b; }
 
-      .badge.year { background: #dbeafe; color: #1e40af; padding: 0.3rem 0.7rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
-      .motif-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; }
-      .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; }
+      .badge.year { background: #dbeafe; color: #1e40af; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+      .motif-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; font-size: 0.9rem; }
+      .date-badge { background: #f1f5f9; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color: #475569; font-weight: 500; }
+
+      .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
       .status-badge.pending { background: #fef3c7; color: #b45309; }
       .status-badge.director { background: #dbeafe; color: #1d4ed8; }
       .status-badge.valid { background: #dcfce7; color: #15803d; }
-      .status-badge.rejected { background: #fee2e2; color: #dc2626; }
+      .status-badge.rejected { background: #fee2e2; color: #991b1b; }
 
-      .action-buttons { display: flex; gap: 0.5rem; }
-      .btn-accept, .btn-refuse { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; }
-      .btn-accept { background: #dcfce7; color: #16a34a; }
-      .btn-accept:hover { background: #22c55e; color: white; }
-      .btn-refuse { background: #fee2e2; color: #dc2626; }
-      .btn-refuse:hover { background: #ef4444; color: white; }
+      .btn-action { padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; }
+      .btn-action:hover { background: #1d4ed8; }
+      .btn-view { padding: 0.4rem 0.8rem; background: white; color: #64748b; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: 0.2s; }
+      .btn-view:hover { border-color: #3b82f6; color: #3b82f6; }
 
-      .loading-state, .empty-state { padding: 4rem; text-align: center; color: #64748b; }
-      .empty-icon { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 1rem; }
-
+      /* MODAL */
       .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
       .modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.25); animation: slideUp 0.3s; }
       .modal-header { padding: 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fcfcfc; }
@@ -268,15 +298,17 @@ import { User } from '@core/models/user.model';
       .btn-close { border: none; background: transparent; font-size: 1.25rem; color: #64748b; cursor: pointer; }
       .modal-body { padding: 2rem; }
 
-      .workflow-container { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; overflow-x: auto; }
-      .step { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; width: 100px; text-align: center; }
-      .step-circle { width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 0.5rem; border: 4px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-      .step-label { font-size: 0.75rem; font-weight: 600; color: #64748b; }
+      /* STEPPER */
+      .workflow-container { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; overflow-x: auto; }
+      .step { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; min-width: 80px; text-align: center; }
+      .step-circle { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 1rem; margin-bottom: 0.5rem; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+      .step-label { font-size: 0.65rem; font-weight: 600; color: #64748b; }
       .step.completed .step-circle { background: #22c55e; color: white; }
       .step.current .step-circle { background: #3b82f6; color: white; animation: pulse 2s infinite; }
-      .step-line { flex: 1; height: 3px; background: #e2e8f0; margin-top: -25px; position: relative; z-index: 1; }
+      .step-line { flex: 1; height: 3px; background: #e2e8f0; margin-top: -20px; position: relative; z-index: 1; min-width: 30px; }
       .step-line.active { background: #22c55e; }
 
+      /* DETAILS */
       .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
       .detail-item { display: flex; flex-direction: column; gap: 0.4rem; }
       .detail-item.full-width { grid-column: 1 / -1; }
@@ -284,21 +316,35 @@ import { User } from '@core/models/user.model';
       .detail-item .value { font-size: 1rem; color: #1e293b; font-weight: 500; }
       .motif-box { background: #fefce8; padding: 1rem; border-radius: 8px; border: 1px solid #fef08a; color: #854d0e; line-height: 1.5; font-size: 0.95rem; }
 
-      .modal-footer { padding: 1.5rem; border-top: 1px solid #e2e8f0; display: flex; gap: 1rem; justify-content: flex-end; background: #fcfcfc; }
-      .btn-accept, .btn-refuse { padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; }
-      .btn-accept { background: #22c55e; color: white; }
-      .btn-refuse { background: #fff; border: 1px solid #ef4444; color: #ef4444; }
+      /* ACTION BOX */
+      .action-section { border-top: 1px solid #e2e8f0; padding-top: 1.5rem; margin-top: 1.5rem; }
+      .admin-action-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 1.5rem; }
+      .admin-action-box h5 { margin: 0 0 0.5rem; color: #9a3412; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+      .admin-action-box p { margin: 0 0 1rem; font-size: 0.9rem; color: #475569; }
 
-      .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 1000; }
-      .toast.success { background: #22c55e; color: white; }
-      .toast.error { background: #ef4444; color: white; }
+      .action-buttons { display: flex; gap: 1rem; justify-content: flex-end; }
+      .btn-validate { padding: 0.75rem 1.5rem; border-radius: 8px; background: #22c55e; color: white; border: none; font-weight: 600; cursor: pointer; }
+      .btn-refuse { padding: 0.75rem 1.5rem; border-radius: 8px; background: white; color: #dc2626; border: 1px solid #fecaca; font-weight: 600; cursor: pointer; }
 
-      @keyframes spin { to { transform: rotate(360deg); } }
+      /* FORMULAIRE REFUS */
+      .decision-form { background: white; padding: 1rem; border-radius: 8px; border: 1px solid #fecaca; }
+      .form-control { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
+      .btn-cancel { padding: 0.6rem 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #64748b; cursor: pointer; }
+      .btn-confirm-refuse { padding: 0.6rem 1.2rem; border-radius: 8px; background: #dc2626; color: white; border: none; font-weight: 600; cursor: pointer; }
+
+      .loading-state, .empty-state { padding: 4rem; text-align: center; color: #64748b; }
+      .spinner-btn { width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+      .spinner-large { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+
+      @keyframes spin { 100% { transform: rotate(360deg); } }
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
       @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
 
-      @media (max-width: 768px) { .hero-section { flex-direction: column; gap: 1.5rem; text-align: center; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .detail-grid { grid-template-columns: 1fr; } }
+      .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 10px; color: white; font-weight: 600; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+      .toast.success { background: #22c55e; } .toast.error { background: #ef4444; color: white; }
+
+      @media (max-width: 992px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .detail-grid { grid-template-columns: 1fr; } }
     `]
 })
 export class AdminReinscriptionsComponent implements OnInit {
@@ -307,6 +353,10 @@ export class AdminReinscriptionsComponent implements OnInit {
     activeTab = 'EN_ATTENTE_ADMIN';
     selectedInscription = signal<any>(null);
     toast = signal<{show: boolean, message: string, type: 'success' | 'error'}>({show: false, message: '', type: 'success'});
+
+    // Etat local pour le refus
+    isRejecting = signal(false);
+    refusalReason = '';
 
     constructor(
         private inscriptionService: InscriptionService,
@@ -328,7 +378,6 @@ export class AdminReinscriptionsComponent implements OnInit {
 
     enrichWithUserInfo(data: any[]): void {
         if (data.length === 0) { this.inscriptions.set([]); this.isLoading.set(false); return; }
-
         let loaded = 0;
         data.forEach(insc => {
             if (insc.doctorantId) {
@@ -406,14 +455,18 @@ export class AdminReinscriptionsComponent implements OnInit {
     getEmptyTitle() { return this.activeTab === 'EN_ATTENTE_ADMIN' ? 'Tout est à jour' : this.activeTab === 'EN_ATTENTE_DIRECTEUR' ? 'Aucun dossier' : 'Historique vide'; }
     getEmptyMessage() { return 'Aucune demande correspondante trouvée.'; }
 
-    showDetails(insc: any) { this.selectedInscription.set(insc); }
+    showDetails(insc: any) {
+        this.selectedInscription.set(insc);
+        this.isRejecting.set(false); // Reset
+        this.refusalReason = '';
+    }
     closeDetails() { this.selectedInscription.set(null); }
 
     getWorkflowStep(insc: any): number {
         if (!insc || !insc.statut) return 1;
-        if (insc.statut === 'EN_ATTENTE_ADMIN') return 2;
-        if (insc.statut === 'EN_ATTENTE_DIRECTEUR') return 3;
-        if (insc.statut === 'ADMIS') return 4;
+        if (insc.statut === 'EN_ATTENTE_ADMIN') return 2; // Etape 2 est la courante
+        if (insc.statut === 'EN_ATTENTE_DIRECTEUR') return 3; // Etape 3 est la courante
+        if (insc.statut === 'ADMIS') return 4; // Fini
         return 1;
     }
 
@@ -424,16 +477,11 @@ export class AdminReinscriptionsComponent implements OnInit {
         return '';
     }
 
-    // ✅ MODIFICATION ICI : Incrémentation Année Doctorant
     valider(insc: any) {
         if(confirm('Valider cette réinscription ? Le doctorant passera à l\'année supérieure.')) {
-
-            // 1. Validation de la réinscription (Backend Service Inscription)
             this.inscriptionService.validerParAdmin(insc.id, 'OK').subscribe({
                 next: () => {
                     this.showToast('Réinscription validée', 'success');
-
-                    // 2. Mise à jour de l'année du doctorant (Backend Service User)
                     if (insc.doctorant && insc.doctorant.id) {
                         const newYear = (insc.doctorant.anneeThese || 1) + 1;
                         this.userService.updateUser(insc.doctorant.id, { anneeThese: newYear }).subscribe({
@@ -441,7 +489,6 @@ export class AdminReinscriptionsComponent implements OnInit {
                             error: (e) => console.error('❌ Erreur update année user', e)
                         });
                     }
-
                     this.loadData();
                     this.closeDetails();
                 },
@@ -450,15 +497,29 @@ export class AdminReinscriptionsComponent implements OnInit {
         }
     }
 
+    // --- LOGIQUE REFUS ---
+    initiateRejection() {
+        this.isRejecting.set(true);
+    }
+
+    cancelRejection() {
+        this.isRejecting.set(false);
+        this.refusalReason = '';
+    }
+
+    confirmRejection(insc: any) {
+        if(!this.refusalReason.trim()) return;
+
+        this.inscriptionService.rejeterParAdmin(insc.id, this.refusalReason).subscribe(() => {
+            this.showToast('Demande rejetée', 'success');
+            this.loadData();
+            this.closeDetails();
+        });
+    }
+
+    // Legacy (si encore utilisé quelque part)
     rejeter(insc: any) {
-        const m = prompt('Motif du refus :');
-        if(m) {
-            this.inscriptionService.rejeterParAdmin(insc.id, m).subscribe(() => {
-                this.showToast('Demande rejetée', 'success');
-                this.loadData();
-                this.closeDetails();
-            });
-        }
+        this.initiateRejection();
     }
 
     showToast(message: string, type: 'success' | 'error') {

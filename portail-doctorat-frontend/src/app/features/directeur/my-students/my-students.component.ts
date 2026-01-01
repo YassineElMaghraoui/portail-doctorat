@@ -26,10 +26,10 @@ import { User } from '@core/models/user.model';
                         </div>
                     </div>
                     <div class="hero-actions">
-             <span class="director-badge">
-               <i class="bi bi-person-badge me-2"></i>
-               Directeur: {{ currentDirectorName() }}
-             </span>
+                         <span class="director-badge">
+                           <i class="bi bi-person-badge me-2"></i>
+                           Directeur: {{ currentDirectorName() }}
+                         </span>
                     </div>
                     <div class="hero-decoration">
                         <div class="decoration-circle c1"></div>
@@ -70,20 +70,24 @@ import { User } from '@core/models/user.model';
                 </div>
 
                 <!-- LISTE DES DOCTORANTS -->
-                <div class="students-list-container">
+                <div class="list-container">
+
                     @if (isLoading()) {
                         <div class="loading-state">
                             <div class="spinner"></div>
                             <p>Chargement de vos doctorants...</p>
                         </div>
-                    } @else if (students().length === 0) {
+                    }
+                    @else if (students().length === 0) {
                         <div class="empty-state">
                             <div class="empty-icon"><i class="bi bi-people"></i></div>
                             <h3>Aucun doctorant assigné</h3>
                             <p>Vous n'avez pas encore de doctorants sous votre direction.</p>
                         </div>
-                    } @else {
-                        <div class="d-flex flex-column gap-3">
+                    }
+                    @else {
+                        <!-- ✅ CONTENEUR EN COLONNE STRICTE -->
+                        <div class="students-column">
                             @for (student of students(); track student.id) {
 
                                 <div class="student-row-card" [class.expanded]="expandedId() === student.id" (click)="toggleExpand(student.id)">
@@ -102,14 +106,13 @@ import { User } from '@core/models/user.model';
                                             </div>
                                         </div>
 
-                                        <!-- 2. Progression -->
-                                        <div class="progress-container d-none d-md-flex">
-                                            <div class="d-flex justify-content-between w-100 mb-2">
-                                                <span class="label">Progression Thèse</span>
-                                                <span class="value text-primary">Année {{ student.anneeThese || 1 }} / 6</span>
+                                        <!-- 2. Progression (Affiché uniquement sur grand écran) -->
+                                        <div class="progress-section d-none d-md-flex">
+                                            <div class="progress-labels">
+                                                <span class="lbl">Progression Thèse</span>
+                                                <span class="val">Année {{ student.anneeThese || 1 }} / 6</span>
                                             </div>
                                             <div class="progress-track">
-                                                <!-- ✅ CORRECTION ICI : style.width en string explicite -->
                                                 <div class="progress-fill"
                                                      [style.width]="getProgressPercentage(student.anneeThese) + '%'"
                                                      [ngClass]="getProgressBarClass(student)">
@@ -119,16 +122,16 @@ import { User } from '@core/models/user.model';
 
                                         <!-- 3. Statut -->
                                         <div class="status-action">
-                      <span class="status-badge" [ngClass]="getAlertBadgeClass(student)">
-                        @if(getAlertLevel(student) === 'RED') { <i class="bi bi-exclamation-triangle-fill"></i> CRITIQUE }
-                        @else if(getAlertLevel(student) === 'YELLOW') { <i class="bi bi-clock-history"></i> FIN CYCLE }
-                        @else { <i class="bi bi-check-circle-fill"></i> NORMAL }
-                      </span>
+                                            <span class="status-badge" [ngClass]="getAlertBadgeClass(student)">
+                                                @if(getAlertLevel(student) === 'RED') { <i class="bi bi-exclamation-triangle-fill"></i> CRITIQUE }
+                                                @else if(getAlertLevel(student) === 'YELLOW') { <i class="bi bi-clock-history"></i> FIN CYCLE }
+                                                @else { <i class="bi bi-check-circle-fill"></i> NORMAL }
+                                            </span>
                                             <i class="bi bi-chevron-down expand-icon" [class.rotated]="expandedId() === student.id"></i>
                                         </div>
                                     </div>
 
-                                    <!-- DROPDOWN -->
+                                    <!-- DROPDOWN (Détails) -->
                                     @if (expandedId() === student.id) {
                                         <div class="row-details" (click)="$event.stopPropagation()">
                                             <hr class="separator">
@@ -148,7 +151,7 @@ import { User } from '@core/models/user.model';
                                                 </div>
                                                 <div class="info-item wide">
                                                     <span class="label"><i class="bi bi-journal-text"></i> Sujet de Thèse</span>
-                                                    <span class="val text-dark fw-bold">{{ student.titreThese || student.sujetThese || 'Sujet non défini' }}</span>
+                                                    <div class="subject-box">{{ student.titreThese || student.sujetThese || 'Sujet non défini' }}</div>
                                                 </div>
                                             </div>
 
@@ -204,7 +207,6 @@ import { User } from '@core/models/user.model';
                         </div>
                     }
                 </div>
-
             </div>
         </app-main-layout>
     `,
@@ -216,7 +218,7 @@ import { User } from '@core/models/user.model';
         background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
         border-radius: 24px; padding: 2.5rem; margin-bottom: 2rem;
         display: flex; align-items: center; justify-content: space-between;
-        position: relative; overflow: hidden; color: white;
+        color: white;
         box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);
       }
       .hero-content { display: flex; align-items: center; gap: 1.5rem; position: relative; z-index: 2; }
@@ -235,41 +237,59 @@ import { User } from '@core/models/user.model';
       .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
       .stat-value { font-size: 1.5rem; font-weight: 800; color: #1e293b; display: block; }
       .stat-label { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; }
+
       .stat-card.purple .stat-icon { background: #e0e7ff; color: #4338ca; }
       .stat-card.green .stat-icon { background: #dcfce7; color: #15803d; }
       .stat-card.orange .stat-icon { background: #ffedd5; color: #c2410c; }
       .stat-card.red .stat-icon { background: #fee2e2; color: #b91c1c; }
 
-      /* --- STUDENTS LIST --- */
-      .students-list-container { display: flex; flex-direction: column; gap: 1rem; }
-      .student-row-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; transition: all 0.2s ease; overflow: hidden; cursor: pointer; width: 100%; }
+      /* --- LIST CONTAINER --- */
+      .list-container { width: 100%; }
+      /* ✅ C'est ici la clé : flex-column force les éléments l'un sous l'autre */
+      .students-column { display: flex; flex-direction: column; gap: 1rem; width: 100%; }
+
+      .student-row-card {
+        background: white; border-radius: 16px; border: 1px solid #e2e8f0;
+        transition: all 0.2s ease; overflow: hidden; cursor: pointer;
+        width: 100%; /* Force la largeur totale */
+        display: block; /* S'assure que c'est un bloc */
+      }
       .student-row-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
       .student-row-card.expanded { border-color: #6366f1; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1); }
 
-      .row-header { display: flex; align-items: center; padding: 1.5rem; gap: 2rem; justify-content: space-between; }
+      /* --- CARD HEADER --- */
+      .row-header {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        gap: 2rem;
+        justify-content: space-between;
+        width: 100%;
+      }
 
-      .user-identity { display: flex; align-items: center; gap: 1.25rem; flex: 2; }
+      .user-identity { display: flex; align-items: center; gap: 1.25rem; flex: 2; min-width: 250px; }
       .avatar-circle { width: 52px; height: 52px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; flex-shrink: 0; }
       .avatar-1 { background: linear-gradient(135deg, #4f46e5, #818cf8); }
       .avatar-2 { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
       .avatar-3 { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+
       .user-text { display: flex; flex-direction: column; gap: 0.2rem; }
       .name { margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b; }
       .matricule { font-size: 0.85rem; color: #64748b; font-family: monospace; display: flex; align-items: center; }
 
-      .progress-container { flex: 2; flex-direction: column; justify-content: center; padding: 0 1rem; }
-      .progress-container .label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-      .progress-container .value { font-size: 0.9rem; font-weight: 700; color: #4f46e5; }
-      .progress-track { height: 10px; background: #f1f5f9; border-radius: 20px; overflow: hidden; }
+      .progress-section { flex: 2; display: flex; flex-direction: column; justify-content: center; padding: 0 1rem; }
+      .progress-labels { display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+      .progress-labels .lbl { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+      .progress-labels .val { font-size: 0.9rem; font-weight: 700; color: #4f46e5; }
+      .progress-track { height: 10px; background: #f1f5f9; border-radius: 20px; overflow: hidden; width: 100%; }
       .progress-fill { height: 100%; border-radius: 20px; transition: width 0.6s ease-in-out; }
 
-      /* ✅ CORRECTION ICI : Ajout explicite des couleurs de fond pour la barre de progression */
       .bg-success { background-color: #22c55e !important; }
       .bg-warning { background-color: #f59e0b !important; }
       .bg-danger { background-color: #ef4444 !important; }
 
-      .status-action { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 2rem; }
-      .status-badge { font-size: 0.75rem; font-weight: 700; padding: 0.5rem 1rem; border-radius: 50px; display: flex; align-items: center; gap: 0.5rem; min-width: 110px; justify-content: center; }
+      .status-action { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 2rem; min-width: 150px; }
+      .status-badge { padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
       .status-badge.bg-danger-soft { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
       .status-badge.bg-warning-soft { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
       .status-badge.bg-success-soft { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
@@ -277,12 +297,16 @@ import { User } from '@core/models/user.model';
       .expand-icon { color: #94a3b8; transition: transform 0.3s; font-size: 1.2rem; }
       .expand-icon.rotated { transform: rotate(180deg); color: #6366f1; }
 
+      /* --- DETAILS DROPDOWN --- */
       .row-details { background: #fcfcfc; padding: 0 1.5rem 1.5rem; cursor: default; border-top: 1px solid #f1f5f9; }
+      .separator { border-top: 1px solid #f1f5f9; margin: 0 0 1.5rem; }
+
       .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; margin-top: 1.5rem; }
       .info-item { display: flex; flex-direction: column; gap: 0.5rem; }
       .info-item.wide { grid-column: span 1; }
       .info-item .label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem; }
       .info-item .val { font-size: 1rem; color: #334155; font-weight: 500; }
+      .subject-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 8px; color: #334155; font-size: 0.95rem; }
 
       .section-title { font-size: 0.85rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; }
 
@@ -318,6 +342,7 @@ export class MyStudentsComponent implements OnInit {
     expandedId = signal<number | null>(null);
     currentDirectorName = signal<string>('');
 
+    // Calcul des statistiques
     stats = computed(() => {
         const list = this.students();
         return {
@@ -344,6 +369,7 @@ export class MyStudentsComponent implements OnInit {
             this.currentDirectorName.set(`${currentUser.prenom} ${currentUser.nom}`);
             this.userService.getUsersByRole('DOCTORANT').subscribe({
                 next: (data) => {
+                    // Filtrage des doctorants associés au directeur
                     const myStudents = data.filter(u => u.directeurId === currentUser.id);
                     this.students.set(myStudents);
                     this.isLoading.set(false);
@@ -357,16 +383,17 @@ export class MyStudentsComponent implements OnInit {
         this.expandedId.set(this.expandedId() === id ? null : id);
     }
 
+    // --- LOGIQUE METIER & UI ---
+
     getProgressPercentage(annee: number | undefined): number {
         const year = annee || 1;
-        // Si l'année est > 6, on bloque à 100%
         return Math.min((year / 6) * 100, 100);
     }
 
     getAlertLevel(student: User): 'RED' | 'YELLOW' | 'GREEN' {
         const annee = student.anneeThese || 1;
         if (annee >= 5) return 'RED';
-        if (annee >= 3) return 'YELLOW'; // Fin de cycle commence à la 3ème année (soutenance théorique)
+        if (annee >= 3) return 'YELLOW';
         return 'GREEN';
     }
 

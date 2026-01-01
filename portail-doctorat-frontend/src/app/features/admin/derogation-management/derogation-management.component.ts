@@ -145,14 +145,22 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                   <div class="step-line" [class.active]="getWorkflowStep(selectedDerogation()!) >= 2"></div>
 
                   <div class="step" [ngClass]="getStepClass(selectedDerogation()!, 2)">
-                    <div class="step-circle"><i class="bi bi-person-check"></i></div>
+                    <div class="step-circle">
+                      @if(getWorkflowStep(selectedDerogation()!) >= 3) { <i class="bi bi-check-lg"></i> }
+                      @else if(getWorkflowStep(selectedDerogation()!) === 2) { <i class="bi bi-person-check"></i> }
+                      @else { <i class="bi bi-person"></i> }
+                    </div>
                     <span class="step-label">Directeur</span>
                   </div>
 
                   <div class="step-line" [class.active]="getWorkflowStep(selectedDerogation()!) >= 3"></div>
 
                   <div class="step" [ngClass]="getStepClass(selectedDerogation()!, 3)">
-                    <div class="step-circle"><i class="bi bi-building"></i></div>
+                    <div class="step-circle">
+                      @if(getWorkflowStep(selectedDerogation()!) > 3) { <i class="bi bi-check-lg"></i> }
+                      @else if(getWorkflowStep(selectedDerogation()!) === 3) { <i class="bi bi-building"></i> }
+                      @else { <i class="bi bi-building"></i> }
+                    </div>
                     <span class="step-label">Administration</span>
                   </div>
                 </div>
@@ -183,11 +191,27 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                 @if (selectedDerogation()?.statut === 'EN_ATTENTE_ADMIN') {
                   <div class="admin-action-box mt-3">
                     <h5><i class="bi bi-shield-check"></i> Validation Administrative</h5>
-                    <p>Le directeur a approuvé cette demande. Confirmez-vous la prolongation ?</p>
-                    <div class="action-buttons">
-                      <button class="btn-refuse" (click)="refuser(selectedDerogation()!.id)">Refuser</button>
-                      <button class="btn-validate" (click)="accepter(selectedDerogation()!.id)">Accepter & Prolonger</button>
-                    </div>
+
+                    <!-- Cas 1 : Affichage des boutons -->
+                    @if (!isRejecting()) {
+                      <p>Le directeur a approuvé cette demande. Confirmez-vous la prolongation ?</p>
+                      <div class="action-buttons">
+                        <button class="btn-refuse" (click)="initiateRefusal()">Refuser</button>
+                        <button class="btn-validate" (click)="accepter(selectedDerogation()!.id)">Accepter & Prolonger</button>
+                      </div>
+                    }
+
+
+                    @else {
+                      <div class="decision-form">
+                        <p class="mb-2 fw-bold text-danger">Motif du refus :</p>
+                        <textarea [(ngModel)]="refusalReason" class="form-control mb-3" rows="3" placeholder="Indiquez la raison du refus..."></textarea>
+                        <div class="d-flex gap-2 justify-content-end">
+                          <button class="btn-cancel" (click)="cancelRefusal()">Annuler</button>
+                          <button class="btn-refuse" [disabled]="!refusalReason.trim()" (click)="confirmRefusal(selectedDerogation()!.id)">Confirmer le refus</button>
+                        </div>
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -241,21 +265,19 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .data-table tbody tr:hover { background: #fffbeb; }
 
     .user-cell { display: flex; align-items: center; gap: 0.75rem; }
-    .avatar-circle { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; display: flex; justify-content: center; align-items: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
+    .avatar-circle { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; display: flex; justify-content: center; align-items: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
     .user-info { display: flex; flex-direction: column; }
-    .user-info .name { font-weight: 600; color: #1e293b; }
-    .user-info .id { font-size: 0.8rem; color: #64748b; }
+    .user-info .name { font-weight: 600; color: #1e293b; font-size: 0.95rem; }
+    .user-info .id { font-size: 0.75rem; color: #64748b; }
     .date-badge { background: #f1f5f9; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color: #475569; font-weight: 500; }
-    .motif-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; font-size: 0.9rem; }
 
-    /* BADGES */
     .type-badge { padding: 0.3rem 0.6rem; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
     .type-badge.year4 { background: #fef3c7; color: #b45309; }
     .type-badge.year5 { background: #ffedd5; color: #c2410c; }
     .type-badge.year6 { background: #fee2e2; color: #dc2626; }
     .type-badge.other { background: #e0e7ff; color: #4338ca; }
 
-    .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+    .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
     .status-badge.pending-directeur { background: #dbeafe; color: #1d4ed8; }
     .status-badge.pending-admin { background: #fef3c7; color: #b45309; }
     .status-badge.success { background: #dcfce7; color: #15803d; }
@@ -289,8 +311,8 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .step-line { flex: 1; height: 3px; background: #e2e8f0; margin-top: -20px; position: relative; z-index: 1; min-width: 30px; }
     .step-line.active { background: #22c55e; }
 
-    /* DETAILS GRID */
-    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    /* DETAILS */
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .detail-item { display: flex; flex-direction: column; gap: 0.4rem; }
     .detail-item.full-width { grid-column: 1 / -1; }
     .detail-item label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -299,8 +321,8 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .comment-box { background: #f1f5f9; padding: 1rem; border-radius: 8px; color: #334155; font-style: italic; }
     .comment-box.director { border-left: 3px solid #f59e0b; }
 
-    /* ACTION BOX */
-    .admin-action-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; }
+    /* ACTIONS & FORMS */
+    .admin-action-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 1.5rem; }
     .admin-action-box h5 { margin: 0 0 0.5rem; color: #9a3412; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
     .admin-action-box p { margin: 0 0 1rem; font-size: 0.9rem; color: #475569; }
 
@@ -308,14 +330,19 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .btn-validate { padding: 0.75rem 1.5rem; border-radius: 8px; background: #22c55e; color: white; border: none; font-weight: 600; cursor: pointer; }
     .btn-refuse { padding: 0.75rem 1.5rem; border-radius: 8px; background: white; color: #dc2626; border: 1px solid #fecaca; font-weight: 600; cursor: pointer; }
 
-    /* ANIMATIONS */
+    .decision-form { background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 1rem; }
+    .form-control { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
+    .btn-cancel { padding: 0.6rem 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #64748b; cursor: pointer; }
+
+    .spinner-btn { width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+    .spinner-large { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #d97706; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(217, 119, 6, 0); } }
 
-    /* TOAST */
     .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 10px; color: white; font-weight: 600; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .toast.success { background: #22c55e; } .toast.error { background: #ef4444; }
+    .toast.success { background: #22c55e; } .toast.error { background: #ef4444; color: white; }
 
     @media (max-width: 992px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .detail-grid { grid-template-columns: 1fr; } }
   `]
@@ -327,6 +354,10 @@ export class DerogationManagementComponent implements OnInit {
   selectedDerogation = signal<any>(null);
   toastMessage = signal<string>('');
   toastType = signal<'success' | 'error'>('success');
+
+  // État local pour le refus
+  isRejecting = signal(false);
+  refusalReason = '';
 
   constructor(
       private derogationService: DerogationService,
@@ -389,29 +420,20 @@ export class DerogationManagementComponent implements OnInit {
 
   truncateMotif(m: string) { return m.length > 30 ? m.substring(0, 30) + '...' : m; }
 
-  showDetails(d: any) { this.selectedDerogation.set(d); }
+  // Modal
+  showDetails(d: any) {
+    this.selectedDerogation.set(d);
+    this.isRejecting.set(false); // Reset de l'état refus
+    this.refusalReason = '';
+  }
   closeDetails() { this.selectedDerogation.set(null); }
 
   getWorkflowStep(d: any): number {
-
-    // 1️⃣ Dépôt (toujours fait)
-    if (d.statut === 'EN_ATTENTE_DIRECTEUR' || d.statut === 'EN_ATTENTE') {
-      return 2; // Directeur = CURRENT / COMPLETED visuellement
-    }
-
-    // 2️⃣ Directeur VALIDÉ
-    if (d.statut === 'EN_ATTENTE_ADMIN') {
-      return 3; // Directeur devient COMPLETED (VERT)
-    }
-
-    // 3️⃣ Administration terminée
-    if (d.statut === 'APPROUVEE' || d.statut === 'REFUSEE') {
-      return 4;
-    }
-
+    if (d.statut === 'EN_ATTENTE_DIRECTEUR' || d.statut === 'EN_ATTENTE') return 2;
+    if (d.statut === 'EN_ATTENTE_ADMIN') return 3;
+    if (d.statut === 'APPROUVEE' || d.statut === 'REFUSEE') return 4;
     return 1;
   }
-
 
   getStepClass(d: any, step: number) {
     const current = this.getWorkflowStep(d);
@@ -420,30 +442,18 @@ export class DerogationManagementComponent implements OnInit {
     return '';
   }
 
-  // ✅ MODIFICATION ICI : Incrémentation Année Doctorant lors de l'acceptation
   accepter(id: number) {
     if(confirm('Valider cette dérogation ? Le doctorant passera à l\'année supérieure.')) {
-
-      // 1. Validation de la dérogation
       this.derogationService.approuverDerogation(id, this.authService.currentUser()!.id, 'OK').subscribe({
         next: () => {
           this.showToast('Dérogation accordée !', 'success');
-
-          // 2. Mise à jour automatique de l'année du doctorant
-          // On récupère la dérogation actuelle pour avoir l'ID du doctorant
+          // Update Doctorant Year
           const derog = this.derogations().find(d => d.id === id);
           if (derog && derog.doctorantId) {
-            // On suppose que l'année demandée est l'année cible (ex: 4ème)
-            // Si la dérogation n'a pas l'année, on incrémente l'année actuelle
             const currentYear = derog.doctorant?.anneeThese || 3;
             const newYear = currentYear + 1;
-
-            this.userService.updateUser(derog.doctorantId, { anneeThese: newYear }).subscribe({
-              next: () => console.log('✅ Année mise à jour : ' + newYear),
-              error: (e) => console.error('❌ Erreur update année', e)
-            });
+            this.userService.updateUser(derog.doctorantId, { anneeThese: newYear }).subscribe();
           }
-
           this.loadDerogations();
           this.closeDetails();
         },
@@ -452,14 +462,32 @@ export class DerogationManagementComponent implements OnInit {
     }
   }
 
+  // --- LOGIQUE REFUS IN-PAGE ---
+  initiateRefusal() {
+    this.isRejecting.set(true);
+  }
+
+  cancelRefusal() {
+    this.isRejecting.set(false);
+    this.refusalReason = '';
+  }
+
+  confirmRefusal(id: number) {
+    if(!this.refusalReason.trim()) return;
+
+    this.derogationService.refuserDerogation(id, this.authService.currentUser()!.id, this.refusalReason).subscribe({
+      next: () => {
+        this.showToast('Refusée', 'success');
+        this.loadDerogations();
+        this.closeDetails();
+      },
+      error: () => this.showToast('Erreur refus', 'error')
+    });
+  }
+
+  // Legacy (Pour compatibilité si appelé ailleurs)
   refuser(id: number) {
-    const m = prompt('Motif ?');
-    if(m) {
-      this.derogationService.refuserDerogation(id, this.authService.currentUser()!.id, m).subscribe({
-        next: () => { this.showToast('Refusée', 'success'); this.loadDerogations(); this.closeDetails(); },
-        error: () => this.showToast('Erreur refus', 'error')
-      });
-    }
+    this.initiateRefusal();
   }
 
   showToast(msg: string, type: 'success' | 'error') {
