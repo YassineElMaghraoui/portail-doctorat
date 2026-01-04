@@ -67,22 +67,22 @@ import { AuthService } from '@core/services/auth.service';
                                                 <span class="thesis-text">{{ getThesisTitle(s) }}</span>
                                             </td>
                                             <td>
-                                                <span class="date-badge">
-                                                    <i class="bi bi-calendar3"></i>
-                                                    {{ s.createdAt | date:'dd/MM/yyyy' }}
-                                                </span>
+                        <span class="date-badge">
+                            <i class="bi bi-calendar3"></i>
+                            {{ s.createdAt | date:'dd/MM/yyyy' }}
+                        </span>
                                             </td>
                                             <td>
-                                                <span class="status-badge" [ngClass]="getStatusClass(s.statut)">
-                                                    {{ formatStatus(s.statut) }}
-                                                </span>
+                        <span class="status-badge" [ngClass]="getStatusClass(s.statut)">
+                            {{ formatStatus(s.statut) }}
+                        </span>
                                             </td>
                                             <td>
                                                 @if (s.dateSoutenance) {
                                                     <span class="date-badge success">
-                                                        <i class="bi bi-calendar-check"></i>
+                             <i class="bi bi-calendar-check"></i>
                                                         {{ s.dateSoutenance | date:'dd/MM/yyyy' }}
-                                                    </span>
+                          </span>
                                                 } @else {
                                                     <span class="text-muted">Non planifiée</span>
                                                 }
@@ -102,42 +102,45 @@ import { AuthService } from '@core/services/auth.service';
                                                     <div class="details-content">
 
                                                         <!-- ALERTE SI REJETÉE -->
-                                                        @if (s.statut === 'REJETEE' && (s.commentaireDirecteur || s.commentaireAdmin)) {
+                                                        @if (s.statut === 'REJETEE') {
                                                             <div class="rejection-alert">
                                                                 <div class="rejection-header">
                                                                     <i class="bi bi-exclamation-triangle-fill"></i>
                                                                     <span>Corrections demandées</span>
                                                                 </div>
                                                                 <div class="rejection-message">
-                                                                    {{ s.commentaireDirecteur || s.commentaireAdmin }}
+                                                                    {{ s.commentaireDirecteur || s.commentaireAdmin || 'Aucun motif précisé.' }}
                                                                 </div>
                                                                 <div class="rejection-hint">
                                                                     <i class="bi bi-info-circle"></i>
-                                                                    Veuillez effectuer les corrections et soumettre une nouvelle demande.
+                                                                    Veuillez effectuer les corrections demandées et soumettre une nouvelle demande.
                                                                 </div>
                                                             </div>
                                                         }
 
-                                                        <!-- Timeline -->
+                                                        <!-- ✅ TIMELINE AJUSTÉE -->
                                                         <div class="timeline-mini">
                                                             @for (step of timelineSteps; track step.id; let i = $index) {
                                                                 <div class="timeline-step"
                                                                      [class.completed]="getStepNumber(s.statut) >= step.id"
-                                                                     [class.current]="getStepNumber(s.statut) === step.id"
-                                                                     [class.rejected]="s.statut === 'REJETEE' && step.id === 2">
+                                                                     [class.current]="getStepNumber(s.statut) === step.id - 1"
+                                                                     [class.rejected]="s.statut === 'REJETEE'">
+
                                                                     <div class="step-dot">
-                                                                        @if (s.statut === 'REJETEE' && step.id === 2) {
-                                                                            <i class="bi bi-x-lg"></i>
-                                                                        } @else {
-                                                                            <i [ngClass]="step.icon"></i>
-                                                                        }
+                                                                        <!-- Si l'étape est passée ou atteinte -->
+                                                                        <i *ngIf="getStepNumber(s.statut) >= step.id" class="bi bi-check-lg"></i>
+                                                                        <!-- Si l'étape est future -->
+                                                                        <i *ngIf="getStepNumber(s.statut) < step.id" [ngClass]="step.icon"></i>
                                                                     </div>
+
                                                                     <span class="step-label">{{ step.label }}</span>
                                                                 </div>
+
+                                                                <!-- Ligne de liaison -->
                                                                 @if (i < timelineSteps.length - 1) {
                                                                     <div class="timeline-line"
-                                                                         [class.completed]="getStepNumber(s.statut) > step.id"
-                                                                         [class.rejected]="s.statut === 'REJETEE' && step.id === 1"></div>
+                                                                         [class.completed]="getStepNumber(s.statut) > step.id">
+                                                                    </div>
                                                                 }
                                                             }
                                                         </div>
@@ -180,17 +183,6 @@ import { AuthService } from '@core/services/auth.service';
                 @if (!isLoadingData() && canSubmitNewRequest()) {
                     <div class="section-card form-section">
 
-                        <!-- Info Banner -->
-                        <div class="info-banner">
-                            <div class="info-icon">
-                                <i class="bi bi-lightbulb"></i>
-                            </div>
-                            <div class="info-content">
-                                <strong>Avant de commencer</strong>
-                                <p>Assurez-vous d'avoir complété les prérequis : 2 publications Q1/Q2, 2 conférences internationales et 200h de formation.</p>
-                            </div>
-                        </div>
-
                         <div class="section-header">
                             <div class="header-left">
                                 <i class="bi bi-file-earmark-plus"></i>
@@ -200,115 +192,139 @@ import { AuthService } from '@core/services/auth.service';
 
                         <div class="form-body">
 
-                            <!-- Sujet de Thèse NON MODIFIABLE -->
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="bi bi-journal-text me-2"></i>
-                                    Sujet de Thèse
-                                    <span class="readonly-badge">
-                                        <i class="bi bi-lock me-1"></i>Défini par le directeur
-                                    </span>
-                                </label>
-                                <div class="readonly-field">
-                                    @if (sujetThese) {
-                                        {{ sujetThese }}
+                            <!-- ✅ ÉTAT DES PRÉREQUIS (BLOQUANT) -->
+                            <div class="prerequisites-check mb-4">
+                                <h5 class="mb-3 font-bold text-dark"><i class="bi bi-check2-square me-2"></i>Vérification des Prérequis</h5>
+
+                                <div class="prereq-grid">
+                                    <!-- Publications -->
+                                    <div class="prereq-box" [class.valid]="userStats.publications >= 2">
+                                        <div class="icon"><i class="bi bi-journal-text"></i></div>
+                                        <div>
+                                            <span class="label">Publications</span>
+                                            <span class="value">{{ userStats.publications }}/2</span>
+                                        </div>
+                                        <i class="bi status-icon" [ngClass]="userStats.publications >= 2 ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                                    </div>
+
+                                    <!-- Conférences -->
+                                    <div class="prereq-box" [class.valid]="userStats.conferences >= 2">
+                                        <div class="icon"><i class="bi bi-mic"></i></div>
+                                        <div>
+                                            <span class="label">Conférences</span>
+                                            <span class="value">{{ userStats.conferences }}/2</span>
+                                        </div>
+                                        <i class="bi status-icon" [ngClass]="userStats.conferences >= 2 ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                                    </div>
+
+                                    <!-- Formation -->
+                                    <div class="prereq-box" [class.valid]="userStats.hours >= 200">
+                                        <div class="icon"><i class="bi bi-clock-history"></i></div>
+                                        <div>
+                                            <span class="label">Formation</span>
+                                            <span class="value">{{ userStats.hours }}h/200h</span>
+                                        </div>
+                                        <i class="bi status-icon" [ngClass]="userStats.hours >= 200 ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                                    </div>
+                                </div>
+
+                                @if (!arePrerequisitesMet()) {
+                                    <div class="alert-banner error mt-3">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <span>Vous ne pouvez pas soumettre de demande tant que tous les prérequis ne sont pas validés.</span>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- FORMULAIRE (Affiché mais désactivé si prérequis non OK) -->
+                            <div [class.disabled-form]="!arePrerequisitesMet()">
+
+                                <!-- Sujet de Thèse NON MODIFIABLE -->
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-journal-text me-2"></i>
+                                        Sujet de Thèse
+                                        <span class="readonly-badge">
+                          <i class="bi bi-lock me-1"></i>Défini par le directeur
+                      </span>
+                                    </label>
+                                    <div class="readonly-field">
+                                        @if (sujetThese) {
+                                            {{ sujetThese }}
+                                        } @else {
+                                            <span class="no-subject">Aucun sujet de thèse assigné</span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Documents -->
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-folder2-open me-2"></i>
+                                        Documents Obligatoires
+                                        <span class="file-hint">(PDF, max 20 Mo)</span>
+                                    </label>
+
+                                    <div class="upload-grid">
+                                        <!-- Manuscrit -->
+                                        <div class="upload-card" [class.uploaded]="files.manuscrit">
+                                            <div class="upload-icon" [class.success]="files.manuscrit">
+                                                <i class="bi" [ngClass]="files.manuscrit ? 'bi-check-circle-fill' : 'bi-file-earmark-pdf'"></i>
+                                            </div>
+                                            <div class="upload-info">
+                                                <span class="upload-title">Manuscrit de Thèse <span class="required">*</span></span>
+                                                <span class="upload-hint">{{ files.manuscrit?.name || 'Version finale (PDF)' }}</span>
+                                            </div>
+                                            <label class="upload-btn">
+                                                <input type="file" (change)="onFileSelect($event, 'manuscrit')" accept=".pdf" hidden [disabled]="!arePrerequisitesMet()">
+                                                <i class="bi bi-cloud-upload me-1"></i>
+                                                {{ files.manuscrit ? 'Changer' : 'Parcourir' }}
+                                            </label>
+                                        </div>
+
+                                        <!-- Rapport Anti-Plagiat -->
+                                        <div class="upload-card" [class.uploaded]="files.rapport">
+                                            <div class="upload-icon" [class.success]="files.rapport">
+                                                <i class="bi" [ngClass]="files.rapport ? 'bi-check-circle-fill' : 'bi-shield-check'"></i>
+                                            </div>
+                                            <div class="upload-info">
+                                                <span class="upload-title">Rapport Anti-Plagiat <span class="required">*</span></span>
+                                                <span class="upload-hint">{{ files.rapport?.name || 'Turnitin/iThenticate < 10%' }}</span>
+                                            </div>
+                                            <label class="upload-btn">
+                                                <input type="file" (change)="onFileSelect($event, 'rapport')" accept=".pdf" hidden [disabled]="!arePrerequisitesMet()">
+                                                <i class="bi bi-cloud-upload me-1"></i>
+                                                {{ files.rapport ? 'Changer' : 'Parcourir' }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <button
+                                        type="button"
+                                        class="btn-submit"
+                                        [disabled]="isLoading() || !sujetThese || !files.manuscrit || !files.rapport || !arePrerequisitesMet()"
+                                        (click)="onSubmit()">
+                                    @if (isLoading()) {
+                                        <span class="spinner"></span>
+                                        <span>Envoi en cours...</span>
                                     } @else {
-                                        <span class="no-subject">Aucun sujet de thèse assigné</span>
+                                        <i class="bi bi-send me-2"></i>
+                                        <span>Soumettre ma Demande</span>
                                     }
-                                </div>
-                                @if (!sujetThese) {
-                                    <div class="warning-message">
-                                        <i class="bi bi-exclamation-triangle me-1"></i>
-                                        Contactez votre directeur pour qu'il vous assigne un sujet de thèse.
-                                    </div>
-                                }
-                            </div>
-
-                            <!-- Documents -->
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="bi bi-folder2-open me-2"></i>
-                                    Documents Obligatoires
-                                    <span class="file-hint">(PDF, max 20 Mo)</span>
-                                </label>
-
-                                <div class="upload-grid">
-                                    <!-- Manuscrit -->
-                                    <div class="upload-card" [class.uploaded]="files.manuscrit">
-                                        <div class="upload-icon" [class.success]="files.manuscrit">
-                                            @if (files.manuscrit) {
-                                                <i class="bi bi-check-circle-fill"></i>
-                                            } @else {
-                                                <i class="bi bi-file-earmark-pdf"></i>
-                                            }
-                                        </div>
-                                        <div class="upload-info">
-                                            <span class="upload-title">Manuscrit de Thèse <span class="required">*</span></span>
-                                            <span class="upload-hint">
-                                                {{ files.manuscrit?.name || 'Version finale (PDF)' }}
-                                            </span>
-                                            @if (files.manuscrit) {
-                                                <span class="file-size">{{ formatFileSize(files.manuscrit.size) }}</span>
-                                            }
-                                        </div>
-                                        <label class="upload-btn">
-                                            <input type="file" (change)="onFileSelect($event, 'manuscrit')" accept=".pdf" hidden>
-                                            <i class="bi bi-cloud-upload me-1"></i>
-                                            {{ files.manuscrit ? 'Changer' : 'Parcourir' }}
-                                        </label>
-                                    </div>
-
-                                    <!-- Rapport Anti-Plagiat -->
-                                    <div class="upload-card" [class.uploaded]="files.rapport">
-                                        <div class="upload-icon" [class.success]="files.rapport">
-                                            @if (files.rapport) {
-                                                <i class="bi bi-check-circle-fill"></i>
-                                            } @else {
-                                                <i class="bi bi-shield-check"></i>
-                                            }
-                                        </div>
-                                        <div class="upload-info">
-                                            <span class="upload-title">Rapport Anti-Plagiat <span class="required">*</span></span>
-                                            <span class="upload-hint">
-                                                {{ files.rapport?.name || 'Turnitin/iThenticate < 10%' }}
-                                            </span>
-                                            @if (files.rapport) {
-                                                <span class="file-size">{{ formatFileSize(files.rapport.size) }}</span>
-                                            }
-                                        </div>
-                                        <label class="upload-btn">
-                                            <input type="file" (change)="onFileSelect($event, 'rapport')" accept=".pdf" hidden>
-                                            <i class="bi bi-cloud-upload me-1"></i>
-                                            {{ files.rapport ? 'Changer' : 'Parcourir' }}
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Submit Button -->
-                            <button
-                                    type="button"
-                                    class="btn-submit"
-                                    [disabled]="isLoading() || !sujetThese || !files.manuscrit || !files.rapport"
-                                    (click)="onSubmit()">
-                                @if (isLoading()) {
-                                    <span class="spinner"></span>
-                                    <span>Envoi en cours...</span>
-                                } @else {
-                                    <i class="bi bi-send me-2"></i>
-                                    <span>Soumettre ma Demande</span>
-                                }
-                            </button>
+                                </button>
+                            </div> <!-- Fin disabled-form -->
 
                             @if (errorMessage()) {
-                                <div class="alert-banner error">
+                                <div class="alert-banner error mt-3">
                                     <i class="bi bi-exclamation-triangle me-2"></i>
                                     {{ errorMessage() }}
                                 </div>
                             }
 
                             @if (successMessage()) {
-                                <div class="alert-banner success">
+                                <div class="alert-banner success mt-3">
                                     <i class="bi bi-check-circle me-2"></i>
                                     {{ successMessage() }}
                                 </div>
@@ -364,10 +380,13 @@ import { AuthService } from '@core/services/auth.service';
       .date-badge.success { background: #dcfce7; color: #15803d; }
       .text-muted { color: #94a3b8; font-style: italic; font-size: 0.85rem; }
       .status-badge { display: inline-block; padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
-      .status-badge.pending { background: #fef3c7; color: #b45309; }
-      .status-badge.approved { background: #dcfce7; color: #15803d; }
-      .status-badge.rejected { background: #fee2e2; color: #dc2626; }
-      .status-badge.completed { background: #dbeafe; color: #1d4ed8; }
+
+      /* Couleurs de statut */
+      .status-badge.pending { background: #fef3c7; color: #b45309; } /* Jaune */
+      .status-badge.approved { background: #e0e7ff; color: #4338ca; } /* Bleu */
+      .status-badge.rejected { background: #fee2e2; color: #dc2626; } /* Rouge */
+      .status-badge.completed { background: #dcfce7; color: #15803d; } /* Vert */
+
       .btn-details { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; color: #475569; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
       .btn-details:hover { background: #f8fafc; border-color: #6366f1; color: #6366f1; }
 
@@ -380,20 +399,20 @@ import { AuthService } from '@core/services/auth.service';
       .rejection-message { background: white; border-radius: 8px; padding: 1rem; color: #1e293b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 0.75rem; border: 1px solid #fecaca; }
       .rejection-hint { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: #b91c1c; }
 
-      .timeline-mini { display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
-      .timeline-step { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
-      .timeline-step .step-dot { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.9rem; }
+      /* Timeline Visuelle (Stepper) */
+      .timeline-mini { display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; padding: 1rem; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
+      .timeline-step { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; position: relative; z-index: 2; width: 80px; }
+      .step-dot { width: 40px; height: 40px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 1rem; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
       .timeline-step.completed .step-dot { background: #22c55e; color: white; }
-      .timeline-step.current .step-dot { background: #6366f1; color: white; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); }
+      .timeline-step.current .step-dot { background: #6366f1; color: white; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
       .timeline-step.rejected .step-dot { background: #ef4444; color: white; }
-      .timeline-step .step-label { font-size: 0.7rem; color: #64748b; }
-      .timeline-step.completed .step-label, .timeline-step.current .step-label { color: #1e293b; font-weight: 600; }
-      .timeline-step.rejected .step-label { color: #dc2626; font-weight: 600; }
-      .timeline-line { width: 40px; height: 3px; background: #e2e8f0; margin: 0 0.5rem; margin-bottom: 1.2rem; }
-      .timeline-line.completed { background: #22c55e; }
-      .timeline-line.rejected { background: #ef4444; }
+      .step-label { font-size: 0.65rem; color: #64748b; font-weight: 500; text-align: center; }
+      .timeline-step.completed .step-label, .timeline-step.current .step-label { color: #1e293b; font-weight: 700; }
 
-      .extra-info { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+      .timeline-line { flex: 1; height: 3px; background: #e2e8f0; margin-top: -20px; position: relative; z-index: 1; min-width: 20px; }
+      .timeline-line.completed { background: #22c55e; }
+
+      .extra-info { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; }
       .info-chip { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; }
       .info-chip i { color: #6366f1; }
       .info-chip.success { background: #f0fdf4; border-color: #86efac; }
@@ -430,20 +449,9 @@ import { AuthService } from '@core/services/auth.service';
       .upload-btn { padding: 0.5rem 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; color: #475569; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
       .upload-btn:hover { background: #6366f1; color: white; border-color: #6366f1; }
 
-      .workflow-section { margin: 2rem 0; padding: 1.5rem; background: #f8fafc; border-radius: 16px; }
-      .workflow-steps { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; }
-      .workflow-step { display: flex; align-items: center; gap: 0.75rem; }
-      .step-number { width: 36px; height: 36px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; color: #64748b; }
-      .step-number.active { background: #6366f1; color: white; }
-      .step-number.final { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
-      .step-text { display: flex; flex-direction: column; }
-      .step-title { font-weight: 600; font-size: 0.85rem; color: #1e293b; }
-      .step-desc { font-size: 0.75rem; color: #64748b; }
-      .workflow-arrow { color: #cbd5e1; font-size: 1.2rem; }
-
       .btn-submit { width: 100%; padding: 1rem; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border: none; border-radius: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35); margin-top: 1.5rem; }
       .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45); }
-      .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+      .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; background: #cbd5e1; box-shadow: none; }
       .spinner { width: 20px; height: 20px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
       .alert-banner { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; margin-top: 1rem; border-radius: 10px; font-size: 0.9rem; }
@@ -454,8 +462,21 @@ import { AuthService } from '@core/services/auth.service';
       .info-standalone i { font-size: 1.5rem; color: #3b82f6; }
       .info-standalone p { margin: 0; color: #1e40af; }
 
+      /* Prerequisites Block */
+      .prereq-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+      .prereq-box { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 1rem; }
+      .prereq-box.valid { border-color: #86efac; background: #f0fdf4; }
+      .prereq-box .icon { width: 40px; height: 40px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 1.2rem; }
+      .prereq-box.valid .icon { background: #dcfce7; color: #16a34a; }
+      .prereq-box .label { display: block; font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+      .prereq-box .value { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+      .status-icon { margin-left: auto; font-size: 1.3rem; color: #cbd5e1; }
+      .prereq-box.valid .status-icon { color: #22c55e; }
+
+      .disabled-form { opacity: 0.6; pointer-events: none; filter: grayscale(100%); }
+
       @media (max-width: 768px) {
-        .upload-grid { grid-template-columns: 1fr; }
+        .upload-grid, .prereq-grid { grid-template-columns: 1fr; }
         .workflow-steps { flex-wrap: wrap; gap: 1rem; }
         .workflow-arrow { display: none; }
         .timeline-mini { flex-wrap: wrap; gap: 0.5rem; }
@@ -472,6 +493,7 @@ export class DoctorantSoutenanceComponent implements OnInit {
     expandedId = signal<number | null>(null);
 
     sujetThese: string = '';
+    userStats = { publications: 0, conferences: 0, hours: 0 };
 
     private readonly MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -480,12 +502,14 @@ export class DoctorantSoutenanceComponent implements OnInit {
         rapport: null
     };
 
+    // ✅ TIMELINE MISE À JOUR (JURY VALIDÉ -> VERT QUAND STATUT >= PLANIFIEE)
     timelineSteps = [
         { id: 1, label: 'Soumise', icon: 'bi bi-send' },
         { id: 2, label: 'Directeur', icon: 'bi bi-person-check' },
-        { id: 3, label: 'Admin', icon: 'bi bi-building' },
-        { id: 4, label: 'Planifiée', icon: 'bi bi-calendar-check' },
-        { id: 5, label: 'Terminée', icon: 'bi bi-trophy' }
+        { id: 3, label: 'Autorisation', icon: 'bi bi-shield-check' },
+        { id: 4, label: 'Jury Validé', icon: 'bi bi-people-fill' },
+        { id: 5, label: 'Planifiée', icon: 'bi bi-calendar-event' },
+        { id: 6, label: 'Terminée', icon: 'bi bi-trophy-fill' }
     ];
 
     constructor(
@@ -496,6 +520,14 @@ export class DoctorantSoutenanceComponent implements OnInit {
     ngOnInit() {
         const user = this.authService.currentUser();
         this.sujetThese = user?.titreThese || user?.sujetThese || '';
+
+        // Charger les stats de l'utilisateur pour la vérification
+        this.userStats = {
+            publications: user?.nbPublications || 0,
+            conferences: user?.nbConferences || 0,
+            hours: user?.heuresFormation || 0
+        };
+
         this.loadSoutenances();
     }
 
@@ -520,6 +552,13 @@ export class DoctorantSoutenanceComponent implements OnInit {
         }
     }
 
+    // --- LOGIQUE PRÉREQUIS ---
+    arePrerequisitesMet(): boolean {
+        return this.userStats.publications >= 2
+            && this.userStats.conferences >= 2
+            && this.userStats.hours >= 200;
+    }
+
     canSubmitNewRequest(): boolean {
         const activeStatuses = ['SOUMIS', 'BROUILLON', 'PREREQUIS_VALIDES', 'JURY_PROPOSE', 'AUTORISEE', 'PLANIFIEE'];
         return !this.mySoutenances().some(s => activeStatuses.includes(s.statut));
@@ -535,7 +574,7 @@ export class DoctorantSoutenanceComponent implements OnInit {
 
     getStatusClass(statut: string): string {
         if (['TERMINEE'].includes(statut)) return 'completed';
-        if (['PREREQUIS_VALIDES', 'JURY_PROPOSE', 'AUTORISEE', 'PLANIFIEE'].includes(statut)) return 'approved';
+        if (['PREREQUIS_VALIDES', 'AUTORISEE', 'PLANIFIEE'].includes(statut)) return 'approved';
         if (['REJETEE', 'REFUSEE'].includes(statut)) return 'rejected';
         return 'pending';
     }
@@ -554,17 +593,19 @@ export class DoctorantSoutenanceComponent implements OnInit {
         return statusMap[statut] || statut;
     }
 
+    // ✅ MAPPING TIMELINE CORRIGÉ
     getStepNumber(statut: string): number {
         const steps: Record<string, number> = {
-            'BROUILLON': 1,
+            'BROUILLON': 0,
             'SOUMIS': 1,
             'PREREQUIS_VALIDES': 2,
-            'JURY_PROPOSE': 3,
-            'AUTORISEE': 4,
-            'PLANIFIEE': 4,
-            'TERMINEE': 5,
+            'AUTORISEE': 3,
+            'JURY_PROPOSE': 3,      // Reste à 3 tant que l'admin n'a pas validé
+            'PLANIFIEE': 5,         // Passe direct à 5 (Jury validé + Date fixée)
+            'TERMINEE': 6,
             'REJETEE': 0
         };
+
         return steps[statut] || 1;
     }
 
@@ -613,7 +654,6 @@ export class DoctorantSoutenanceComponent implements OnInit {
             return;
         }
 
-        // ✅ CORRECTION ICI : Création d'un objet FormData unique
         const formData = new FormData();
         formData.append('titre', this.sujetThese);
         formData.append('doctorantId', user.id.toString());
@@ -621,12 +661,9 @@ export class DoctorantSoutenanceComponent implements OnInit {
             formData.append('directeurId', user.directeurId.toString());
         }
 
-        // Ajout des fichiers (avec le nom de clé exact attendu par le backend)
-        // Le backend attend "rapportAntiPlagiat", pas "rapport"
         formData.append('manuscrit', this.files.manuscrit!);
         formData.append('rapportAntiPlagiat', this.files.rapport!);
 
-        // Appel du service avec UN SEUL argument (formData)
         this.soutenanceService.soumettreDemande(formData).subscribe({
             next: (res) => {
                 this.successMessage.set('Votre demande de soutenance a été soumise avec succès !');

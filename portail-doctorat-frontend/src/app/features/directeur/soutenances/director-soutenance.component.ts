@@ -120,6 +120,53 @@ interface JurySelection {
                                                             <div class="step" [ngClass]="getStepClass(s, 5)"><div class="step-circle"><i class="bi bi-trophy"></i></div><span class="step-label">Soutenance</span></div>
                                                         </div>
 
+                                                        <!-- INFOS DOCTORANT -->
+                                                        <div class="doctorant-info-card">
+                                                            <div class="doctorant-header">
+                                                                <div class="doctorant-avatar">{{ getInitials(getDoctorantName(s)) }}</div>
+                                                                <div class="doctorant-main-info">
+                                                                    <h4>{{ getDoctorantName(s) }}</h4>
+                                                                    <span class="doctorant-status">Doctorant</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="doctorant-details">
+                                                                <div class="info-item">
+                                                                    <i class="bi bi-person-badge"></i>
+                                                                    <div>
+                                                                        <span class="info-label">Matricule</span>
+                                                                        <span class="info-value">{{ s.doctorantInfo?.username || 'Non renseigné' }}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <i class="bi bi-envelope"></i>
+                                                                    <div>
+                                                                        <span class="info-label">Email</span>
+                                                                        <span class="info-value">{{ s.doctorantInfo?.email || 'Non renseigné' }}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <i class="bi bi-telephone"></i>
+                                                                    <div>
+                                                                        <span class="info-label">Téléphone</span>
+                                                                        <span class="info-value">{{ s.doctorantInfo?.telephone || 'Non renseigné' }}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="info-item">
+                                                                    <i class="bi bi-mortarboard"></i>
+                                                                    <div>
+                                                                        <span class="info-label">Année de thèse</span>
+                                                                        <span class="info-value">{{ s.doctorantInfo?.anneeThese || 1 }}ème année</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- SUJET DE THÈSE -->
+                                                        <div class="thesis-box">
+                                                            <h6><i class="bi bi-journal-text"></i> Sujet de Thèse</h6>
+                                                            <p>{{ getThesisTitle(s) }}</p>
+                                                        </div>
+
                                                         <div class="detail-grid">
                                                             <div class="detail-box prerequis">
                                                                 <h6><i class="bi bi-award"></i> État des Prérequis</h6>
@@ -155,19 +202,16 @@ interface JurySelection {
                                                                             <i class="bi" [class.bi-check-circle-fill]="decisionType() === 'validate'" [class.text-success]="decisionType() === 'validate'"
                                                                                [class.bi-exclamation-triangle-fill]="decisionType() === 'reject'" [class.text-danger]="decisionType() === 'reject'"></i>
                                                                             <span class="fw-bold text-dark">
-                                         {{ decisionType() === 'validate' ? 'Confirmer la validation des prérequis ?' : 'Indiquez le motif du refus :' }}
-                                       </span>
+                                                                                {{ decisionType() === 'validate' ? 'Confirmer la validation des prérequis ?' : 'Indiquez le motif du refus :' }}
+                                                                            </span>
                                                                         </div>
 
                                                                         @if (decisionType() === 'reject') {
-                                                                            <textarea [(ngModel)]="commentaire" class="form-control mb-3" rows="2" placeholder="Expliquez les corrections attendues..."></textarea>
+                                                                            <textarea [(ngModel)]="commentaire" class="form-control mb-3" rows="2" placeholder="Expliquez les corrections attendues..." (click)="$event.stopPropagation()"></textarea>
                                                                         }
 
                                                                         <div class="d-flex gap-2 justify-content-end">
-                                                                            <!-- Bouton Annuler -->
-                                                                            <button class="btn-cancel" (click)="resetForms()">Annuler</button>
-
-                                                                            <!-- Bouton Confirmer (Coloré selon action) -->
+                                                                            <button class="btn-cancel" (click)="resetForms($event)">Annuler</button>
                                                                             <button class="btn-confirm"
                                                                                     [class.green]="decisionType() === 'validate'"
                                                                                     [class.red]="decisionType() === 'reject'"
@@ -187,14 +231,65 @@ interface JurySelection {
                                                             <div class="action-area mt-4">
                                                                 <h5 class="action-title"><i class="bi bi-people-fill"></i> Proposition du Jury</h5>
                                                                 <div class="jury-grid">
-                                                                    <div class="jury-select"><label class="text-president">Président</label><select [(ngModel)]="jurySelection.presidentId"><option [ngValue]="null">-- Choisir --</option>@for (m of presidentsDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option> }</select></div>
-                                                                    <div class="jury-select"><label class="text-rapporteur">Rapporteur</label><select [(ngModel)]="jurySelection.rapporteurId"><option [ngValue]="null">-- Choisir --</option>@for (m of rapporteursDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option> }</select></div>
-                                                                    <div class="jury-select"><label class="text-examinateur">Examinateur</label><select [(ngModel)]="jurySelection.examinateurId"><option [ngValue]="null">-- Choisir --</option>@for (m of examinateursDisponibles(); track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option> }</select></div>
+                                                                    <div class="jury-select">
+                                                                        <label class="text-president">Président</label>
+                                                                        <select [(ngModel)]="jurySelection.presidentId" (click)="$event.stopPropagation()">
+                                                                            <option [ngValue]="null">-- Choisir --</option>
+                                                                            @for (m of presidentsDisponibles(); track m.id) {
+                                                                                <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option>
+                                                                            }
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="jury-select">
+                                                                        <label class="text-rapporteur">Rapporteur</label>
+                                                                        <select [(ngModel)]="jurySelection.rapporteurId" (click)="$event.stopPropagation()">
+                                                                            <option [ngValue]="null">-- Choisir --</option>
+                                                                            @for (m of rapporteursDisponibles(); track m.id) {
+                                                                                <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option>
+                                                                            }
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="jury-select">
+                                                                        <label class="text-examinateur">Examinateur</label>
+                                                                        <select [(ngModel)]="jurySelection.examinateurId" (click)="$event.stopPropagation()">
+                                                                            <option [ngValue]="null">-- Choisir --</option>
+                                                                            @for (m of examinateursDisponibles(); track m.id) {
+                                                                                <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option>
+                                                                            }
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-end mt-3">
                                                                     <button class="btn-validate" [disabled]="!isJurySelectionValid() || isSubmitting()" (click)="submitJurySelection(s.id, $event)">
                                                                         @if (isSubmitting()) { <span class="spinner-sm-white"></span> } Soumettre le jury
                                                                     </button>
+                                                                </div>
+                                                            </div>
+                                                        }
+
+                                                        <!-- INFO EN ATTENTE ADMIN -->
+                                                        @if (s.statut === 'PREREQUIS_VALIDES') {
+                                                            <div class="info-box waiting mt-3">
+                                                                <i class="bi bi-hourglass-split text-warning"></i>
+                                                                <strong>En attente de validation administrative</strong>
+                                                            </div>
+                                                        }
+
+                                                        @if (s.statut === 'JURY_PROPOSE') {
+                                                            <div class="info-box waiting mt-3">
+                                                                <i class="bi bi-people text-primary"></i>
+                                                                <strong>Jury en cours de validation par l'administration</strong>
+                                                            </div>
+                                                        }
+
+                                                        @if (s.statut === 'PLANIFIEE') {
+                                                            <div class="info-box scheduled mt-3">
+                                                                <i class="bi bi-calendar-event text-purple"></i>
+                                                                <div>
+                                                                    <strong>Soutenance planifiée</strong>
+                                                                    @if (s.dateSoutenance) {
+                                                                        <p class="mb-0 mt-1 small">Date : {{ s.dateSoutenance | date:'dd/MM/yyyy à HH:mm' }} - Lieu : {{ s.lieu || 'Non précisé' }}</p>
+                                                                    }
                                                                 </div>
                                                             </div>
                                                         }
@@ -217,12 +312,27 @@ interface JurySelection {
 
                                                         <!-- RESULTAT -->
                                                         @if (s.statut === 'TERMINEE') {
-                                                            <div class="alert alert-success mt-3 d-flex align-items-center gap-2">
-                                                                <i class="bi bi-trophy-fill fs-4"></i>
+                                                            <div class="result-box success mt-3">
+                                                                <div class="result-icon"><i class="bi bi-trophy-fill"></i></div>
+                                                                <div class="result-content">
+                                                                    <strong>Soutenance terminée avec succès</strong>
+                                                                    <p class="mb-0">Mention : <span class="mention-badge">{{ s.mention }}</span></p>
+                                                                    @if(s.felicitationsJury) {
+                                                                        <span class="felicitations-badge"><i class="bi bi-star-fill"></i> Félicitations du jury</span>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        }
+
+                                                        <!-- REJETEE -->
+                                                        @if (s.statut === 'REJETEE') {
+                                                            <div class="info-box danger mt-3">
+                                                                <i class="bi bi-x-circle-fill text-danger"></i>
                                                                 <div>
-                                                                    <strong>Soutenance terminée</strong><br>
-                                                                    Mention : {{ s.mention }}
-                                                                    @if(s.felicitationsJury) { <span class="badge bg-warning text-dark ms-2"><i class="bi bi-star-fill"></i> Félicitations</span> }
+                                                                    <strong>Demande rejetée</strong>
+                                                                    @if (s.commentaire) {
+                                                                        <p class="mb-0 mt-1 small">Motif : {{ s.commentaire }}</p>
+                                                                    }
                                                                 </div>
                                                             </div>
                                                         }
@@ -249,7 +359,8 @@ interface JurySelection {
       .hero-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 1.75rem; }
       .hero-title { font-size: 1.5rem; font-weight: 800; margin: 0; }
       .hero-subtitle { margin: 0.25rem 0 0; opacity: 0.9; }
-      .btn-refresh { padding: 0.75rem 1.25rem; background: white; color: #6d28d9; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
+      .btn-refresh { padding: 0.75rem 1.25rem; background: white; color: #6d28d9; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; transition: 0.2s; }
+      .btn-refresh:hover { transform: translateY(-2px); }
 
       /* STATS */
       .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
@@ -299,9 +410,27 @@ interface JurySelection {
       .expand-icon.rotated { transform: rotate(180deg); color: #7c3aed; }
 
       /* DETAILS */
-      .details-row td { padding: 0; border: none; }
+      .details-row td { padding: 0 !important; border: none !important; }
       .details-panel { padding: 2rem; background: #fff; animation: slideDown 0.3s; border-bottom: 1px solid #e2e8f0; }
-      .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem; }
+
+      /* DOCTORANT INFO CARD */
+      .doctorant-info-card { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; }
+      .doctorant-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0; }
+      .doctorant-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; display: flex; justify-content: center; align-items: center; font-weight: 700; font-size: 1.25rem; flex-shrink: 0; }
+      .doctorant-main-info h4 { margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+      .doctorant-status { font-size: 0.75rem; color: #7c3aed; font-weight: 600; background: #f3e8ff; padding: 0.2rem 0.6rem; border-radius: 50px; }
+      .doctorant-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+      .doctorant-details .info-item { display: flex; align-items: flex-start; gap: 0.75rem; }
+      .doctorant-details .info-item i { width: 32px; height: 32px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #7c3aed; font-size: 0.9rem; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+      .doctorant-details .info-item .info-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 600; display: block; }
+      .doctorant-details .info-item .info-value { font-size: 0.9rem; color: #1e293b; font-weight: 500; }
+
+      /* THESIS BOX */
+      .thesis-box { background: #fefce8; border: 1px solid #fef08a; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+      .thesis-box h6 { font-size: 0.8rem; font-weight: 700; color: #854d0e; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+      .thesis-box p { margin: 0; color: #713f12; font-size: 0.95rem; line-height: 1.5; }
+
+      .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
       .detail-box { background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; }
       .detail-box h6 { font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
 
@@ -326,12 +455,29 @@ interface JurySelection {
       .step-line { flex: 1; height: 3px; background: #e2e8f0; margin-top: -20px; position: relative; z-index: 1; min-width: 30px; }
       .step-line.active { background: #22c55e; }
 
+      /* INFO BOX */
+      .info-box { background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; color: #334155; display: flex; align-items: center; gap: 0.75rem; }
+      .info-box.success { background: #f0fdf4; border-color: #86efac; }
+      .info-box.waiting { background: #fffbeb; border-color: #fcd34d; }
+      .info-box.scheduled { background: #f3e8ff; border-color: #c4b5fd; }
+      .info-box.danger { background: #fef2f2; border-color: #fecaca; }
+
+      /* RESULT BOX */
+      .result-box { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border-radius: 12px; }
+      .result-box.success { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #86efac; }
+      .result-icon { width: 48px; height: 48px; background: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem; }
+      .result-content strong { color: #166534; display: block; margin-bottom: 0.25rem; }
+      .result-content p { color: #166534; font-size: 0.9rem; }
+      .mention-badge { background: #166534; color: white; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; }
+      .felicitations-badge { background: #fef3c7; color: #b45309; padding: 0.25rem 0.6rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem; }
+
       /* ACTIONS & FORMS */
       .action-area { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; }
       .action-title { color: #9a3412; font-size: 1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
 
       .btn-validate { padding: 0.6rem 1.2rem; background: #22c55e; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-      .btn-validate:hover { transform: translateY(-1px); }
+      .btn-validate:hover:not(:disabled) { transform: translateY(-1px); background: #16a34a; }
+      .btn-validate:disabled { opacity: 0.6; cursor: not-allowed; }
       .btn-refuse { padding: 0.6rem 1.2rem; background: white; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
       .btn-refuse:hover { background: #fef2f2; }
 
@@ -340,15 +486,23 @@ interface JurySelection {
       .decision-form.approve-bg { background: #f0fdf4; border-color: #86efac; }
       .decision-form.reject-bg { background: #fef2f2; border-color: #fecaca; }
 
-      .btn-cancel { padding: 0.6rem 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #64748b; cursor: pointer; }
-      .btn-confirm { padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+      .form-control { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
+      .form-control:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+
+      .btn-cancel { padding: 0.6rem 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #64748b; cursor: pointer; transition: 0.2s; }
+      .btn-cancel:hover { background: #f8fafc; }
+      .btn-confirm { padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: 0.2s; }
       .btn-confirm.green { background: #22c55e; }
+      .btn-confirm.green:hover:not(:disabled) { background: #16a34a; }
       .btn-confirm.red { background: #ef4444; }
+      .btn-confirm.red:hover:not(:disabled) { background: #dc2626; }
+      .btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
 
       /* Jury Grid */
       .jury-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
       .jury-select label { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.3rem; text-transform: uppercase; }
       .jury-select select { width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; }
+      .jury-select select:focus { outline: none; border-color: #7c3aed; }
       .text-president { color: #d97706; } .text-rapporteur { color: #2563eb; } .text-examinateur { color: #7c3aed; }
 
       /* Jury List View */
@@ -360,22 +514,25 @@ interface JurySelection {
       .role-badge.examinateur { background: #f3e8ff; color: #6d28d9; }
 
       .loading-cell, .empty-cell { padding: 3rem; text-align: center; color: #64748b; }
-      .empty-icon { font-size: 2rem; color: #cbd5e1; margin-bottom: 0.5rem; }
+      .empty-content { color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+      .empty-content i { font-size: 2rem; }
       .spinner-btn { width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
-      .spinner-large { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #7c3aed; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
-      .spinner-sm { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #7c3aed; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+      .spinner-sm { width: 16px; height: 16px; border: 2px solid rgba(124, 58, 237, 0.3); border-top-color: #7c3aed; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
       .spinner-sm-white { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
 
       @keyframes spin { 100% { transform: rotate(360deg); } }
       @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); } }
 
-      .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 10px; color: white; font-weight: 600; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-      .toast.success { background: #22c55e; } .toast.error { background: #ef4444; }
+      .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 10px; color: white; font-weight: 600; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.5rem; animation: slideUp 0.3s; }
+      .toast.success { background: #22c55e; }
+      .toast.error { background: #ef4444; }
+      @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
       @media (max-width: 992px) {
         .stats-grid { grid-template-columns: repeat(2, 1fr); }
         .detail-grid, .jury-grid, .jury-list-view { grid-template-columns: 1fr; }
+        .doctorant-details { grid-template-columns: 1fr; }
       }
     `]
 })
@@ -436,6 +593,7 @@ export class DirectorSoutenanceComponent implements OnInit {
     setTab(tab: string) {
         this.activeTab = tab;
         this.expandedId.set(null);
+        this.resetForms();
     }
 
     filteredSoutenances() {
@@ -465,7 +623,8 @@ export class DirectorSoutenanceComponent implements OnInit {
         }
     }
 
-    resetForms() {
+    resetForms(e?: Event) {
+        if (e) e.stopPropagation();
         this.showDecisionForm.set(false);
         this.decisionType.set(null);
         this.commentaire = '';
@@ -481,7 +640,7 @@ export class DirectorSoutenanceComponent implements OnInit {
     // Visuals
     getStatusBadgeClass(s: string) { return ['SOUMIS', 'AUTORISEE'].includes(s) ? 'pending' : ['PREREQUIS_VALIDES', 'JURY_PROPOSE'].includes(s) ? 'waiting' : s === 'PLANIFIEE' ? 'scheduled' : s === 'TERMINEE' ? 'success' : 'danger'; }
     getStatusIcon(s: string) { return ['SOUMIS', 'AUTORISEE'].includes(s) ? 'bi-exclamation-circle' : ['PREREQUIS_VALIDES', 'JURY_PROPOSE'].includes(s) ? 'bi-hourglass-split' : s === 'PLANIFIEE' ? 'bi-calendar-check' : s === 'TERMINEE' ? 'bi-check-circle-fill' : 'bi-x-circle'; }
-    formatStatus(s: string) { const map: any = { 'SOUMIS': 'À Valider', 'PREREQUIS_VALIDES': 'Attente Admin', 'AUTORISEE': 'Jury à faire', 'JURY_PROPOSE': 'Jury en validation', 'PLANIFIEE': 'Planifiée', 'TERMINEE': 'Terminée' }; return map[s] || s; }
+    formatStatus(s: string) { const map: any = { 'SOUMIS': 'À Valider', 'PREREQUIS_VALIDES': 'Attente Admin', 'AUTORISEE': 'Jury à faire', 'JURY_PROPOSE': 'Jury en validation', 'PLANIFIEE': 'Planifiée', 'TERMINEE': 'Terminée', 'REJETEE': 'Rejetée' }; return map[s] || s; }
 
     // Data
     getPublications(s: any): number { return s.doctorantInfo?.nbPublications || 0; }
@@ -504,7 +663,7 @@ export class DirectorSoutenanceComponent implements OnInit {
         e.stopPropagation();
         this.isSubmitting.set(true);
         this.soutenanceService.validerPrerequisDirecteur(id, 'Validé').subscribe({
-            next: () => { this.showToast('Prérequis validés avec succès !', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); },
+            next: () => { this.showToast('Prérequis validés avec succès !', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); this.expandedId.set(null); },
             error: () => { this.showToast('Erreur lors de la validation', 'error'); this.isSubmitting.set(false); }
         });
     }
@@ -513,7 +672,7 @@ export class DirectorSoutenanceComponent implements OnInit {
         e.stopPropagation();
         this.isSubmitting.set(true);
         this.soutenanceService.rejeterDemandeDirecteur(id, this.commentaire).subscribe({
-            next: () => { this.showToast('Demande de corrections envoyée', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); },
+            next: () => { this.showToast('Demande de corrections envoyée', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); this.expandedId.set(null); },
             error: () => { this.showToast('Erreur lors du rejet', 'error'); this.isSubmitting.set(false); }
         });
     }
@@ -538,7 +697,7 @@ export class DirectorSoutenanceComponent implements OnInit {
         forkJoin(reqs).subscribe({
             next: () => {
                 this.soutenanceService.proposerJury(id).subscribe({
-                    next: () => { this.showToast('Jury soumis pour validation !', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); },
+                    next: () => { this.showToast('Jury soumis pour validation !', 'success'); this.loadData(); this.resetForms(); this.isSubmitting.set(false); this.expandedId.set(null); },
                     error: () => { this.showToast('Erreur lors de la proposition du jury', 'error'); this.isSubmitting.set(false); }
                 });
             },
